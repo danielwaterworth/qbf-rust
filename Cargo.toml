@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Daniel Waterworth <da.waterworth@gmail.com>"]
 
 [dependencies]
+nom = "^1.2.3"
 
 [[bin]]
 name = "qbf"
