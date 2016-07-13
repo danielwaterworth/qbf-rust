@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
+#[derive(Debug)]
 enum Quantifier {
     Exists,
     ForAll
 }
 
+#[derive(Debug)]
 enum Expression<'r> {
     And(&'r Expression<'r>, &'r Expression<'r>),
     Or(&'r Expression<'r>, &'r Expression<'r>),
@@ -12,12 +17,14 @@ enum Expression<'r> {
     False
 }
 
+#[derive(Debug)]
 struct QBF<'r> {
     start_at: u32,
     quantifiers: &'r [Quantifier],
     expr: &'r Expression<'r>
 }
 
+#[derive(Debug)]
 enum Solution {
     Sat,
     Unsat
@@ -26,97 +33,129 @@ enum Solution {
 static TRUE: Expression<'static> = Expression::True;
 static FALSE: Expression<'static> = Expression::False;
 
-fn substitute<'r, F, X>(expr: &'r Expression<'r>, variable: u32, value: bool, f: F) -> X
-    where F : for<'r1> Fn(&'r1 Expression<'r1>) -> X {
+struct Substitutions<'r> {
+    map: HashMap<*const (), &'r Expression<'r>>
+}
+
+fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
+    where K: Eq, K: Hash, V:Clone {
+    match m.get(k) {
+        Some(v) => Some(v.clone()),
+        None => None
+    }
+}
+
+fn substitute<'r, F, X>(
+        subs: Box<Substitutions<'r>>,
+        expr: &'r Expression<'r>,
+        variable: u32,
+        value: bool,
+        cb: F) -> X
+    where F : for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X {
+    let expr_ptr = (expr as *const _) as *const ();
+    match get_clone(&subs.map, &expr_ptr) {
+        Some(expr1) => {
+            return cb(subs, expr1);
+        },
+        None => {}
+    };
+
+    let f: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|mut subs1, expr1| {
+        subs1.map.insert(expr_ptr, expr1);
+        cb(subs1, expr1)
+    };
+
     match *expr {
-        Expression::True => f(expr),
-        Expression::False => f(expr),
+        Expression::True => f(subs, expr),
+        Expression::False => f(subs, expr),
         Expression::Var(n) => {
             if n == variable {
                 if value {
-                    f(&TRUE)
+                    f(subs, &TRUE)
                 } else {
-                    f(&FALSE)
+                    f(subs, &FALSE)
                 }
             } else {
-                f(expr)
+                f(subs, expr)
             }
         },
         Expression::Not(a) => {
-            let g: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr| {
-                match *expr {
-                    Expression::True => f(&FALSE),
-                    Expression::False => f(&TRUE),
+            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
+                match *expr1 {
+                    Expression::True => f(subs1, &FALSE),
+                    Expression::False => f(subs1, &TRUE),
                     _ => {
-                        let e = Expression::Not(expr);
-                        f(&e)
+                        let e = Expression::Not(expr1);
+                        f(subs1, &e)
                     }
                 }
             };
-            substitute(a, variable, value, g)
+            substitute(subs, a, variable, value, g)
         },
         Expression::Or(a, b) => {
-            let g: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr| {
+            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
                 match *expr {
-                    Expression::True => f(&TRUE),
+                    Expression::True => f(subs1, &TRUE),
                     Expression::False => {
-                        let h: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr1| f(expr1);
-                        substitute(b, variable, value, h)
+                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
+                        substitute(subs1, b, variable, value, h)
                     },
                     _ => {
-                        let h: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr1| {
+                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
                             match *expr1 {
-                                Expression::True => f(&TRUE),
-                                Expression::False => f(expr1),
+                                Expression::True => f(subs2, &TRUE),
+                                Expression::False => f(subs2, expr1),
                                 _ => {
                                     let e = Expression::Or(expr, expr1);
-                                    f(&e)
+                                    f(subs2, &e)
                                 }
                             }
                         };
-                        substitute(b, variable, value, h)
+                        substitute(subs1, b, variable, value, h)
                     }
                 }
             };
-            substitute(a, variable, value, g)
+            substitute(subs, a, variable, value, g)
         },
         Expression::And(a, b) => {
-            let g: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr| {
+            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
                 match *expr {
-                    Expression::False => f(&FALSE),
+                    Expression::False => f(subs1, &FALSE),
                     Expression::True => {
-                        let h: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr1| f(expr1);
-                        substitute(b, variable, value, h)
+                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
+                        substitute(subs1, b, variable, value, h)
                     },
                     _ => {
-                        let h: &for<'r1> Fn(&'r1 Expression<'r1>) -> X = &|expr1| {
+                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
                             match *expr1 {
-                                Expression::False => f(&FALSE),
-                                Expression::True => f(expr1),
+                                Expression::False => f(subs2, &FALSE),
+                                Expression::True => f(subs2, expr1),
                                 _ => {
                                     let e = Expression::And(expr, expr1);
-                                    f(&e)
+                                    f(subs2, &e)
                                 }
                             }
                         };
-                        substitute(b, variable, value, h)
+                        substitute(subs1, b, variable, value, h)
                     }
                 }
             };
-            substitute(a, variable, value, g)
+            substitute(subs, a, variable, value, g)
         }
     }
 }
 
 fn solve_with<'r>(problem : &'r QBF<'r>, v: bool) -> Solution {
-    let solve1: &for<'r1> Fn(&'r1 Expression<'r1>) -> Solution = &|expr|
+    let solve1: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> Solution = &|_, expr| {
         solve(
             &QBF {
                 start_at: problem.start_at + 1,
                 quantifiers: &problem.quantifiers[1..],
                 expr: expr
-            });
-    substitute(&problem.expr, problem.start_at, v, solve1)
+            })
+    };
+    let subs = Box::new(Substitutions {map: HashMap::new()});
+    substitute(subs, &problem.expr, problem.start_at, v, solve1)
 }
 
 fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
