@@ -1,198 +1,22 @@
-use std::collections::HashMap;
-use std::hash::Hash;
+mod problem;
+mod solver;
 
-#[derive(Debug)]
-enum Quantifier {
-    Exists,
-    ForAll
-}
+use problem::Quantifier;
+use problem::Expression;
+use problem::QBF;
 
-#[derive(Debug)]
-enum Expression<'r> {
-    And(&'r Expression<'r>, &'r Expression<'r>),
-    Or(&'r Expression<'r>, &'r Expression<'r>),
-    Not(&'r Expression<'r>),
-    Var(u32),
-    True,
-    False
-}
-
-#[derive(Debug)]
-struct QBF<'r> {
-    start_at: u32,
-    quantifiers: &'r [Quantifier],
-    expr: &'r Expression<'r>
-}
-
-#[derive(Debug)]
-enum Solution {
-    Sat,
-    Unsat
-}
-
-static TRUE: Expression<'static> = Expression::True;
-static FALSE: Expression<'static> = Expression::False;
-
-struct Substitutions<'r> {
-    map: HashMap<*const (), &'r Expression<'r>>
-}
-
-fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
-    where K: Eq, K: Hash, V:Clone {
-    match m.get(k) {
-        Some(v) => Some(v.clone()),
-        None => None
-    }
-}
-
-fn substitute<'r, F, X>(
-        subs: Box<Substitutions<'r>>,
-        expr: &'r Expression<'r>,
-        variable: u32,
-        value: bool,
-        cb: F) -> X
-    where F : for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X {
-    let expr_ptr = (expr as *const _) as *const ();
-    match get_clone(&subs.map, &expr_ptr) {
-        Some(expr1) => {
-            return cb(subs, expr1);
-        },
-        None => {}
-    };
-
-    let f: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|mut subs1, expr1| {
-        subs1.map.insert(expr_ptr, expr1);
-        cb(subs1, expr1)
-    };
-
-    match *expr {
-        Expression::True => f(subs, expr),
-        Expression::False => f(subs, expr),
-        Expression::Var(n) => {
-            if n == variable {
-                if value {
-                    f(subs, &TRUE)
-                } else {
-                    f(subs, &FALSE)
-                }
-            } else {
-                f(subs, expr)
-            }
-        },
-        Expression::Not(a) => {
-            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
-                match *expr1 {
-                    Expression::True => f(subs1, &FALSE),
-                    Expression::False => f(subs1, &TRUE),
-                    _ => {
-                        let e = Expression::Not(expr1);
-                        f(subs1, &e)
-                    }
-                }
-            };
-            substitute(subs, a, variable, value, g)
-        },
-        Expression::Or(a, b) => {
-            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
-                match *expr {
-                    Expression::True => f(subs1, &TRUE),
-                    Expression::False => {
-                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                        substitute(subs1, b, variable, value, h)
-                    },
-                    _ => {
-                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
-                            match *expr1 {
-                                Expression::True => f(subs2, &TRUE),
-                                Expression::False => f(subs2, expr1),
-                                _ => {
-                                    let e = Expression::Or(expr, expr1);
-                                    f(subs2, &e)
-                                }
-                            }
-                        };
-                        substitute(subs1, b, variable, value, h)
-                    }
-                }
-            };
-            substitute(subs, a, variable, value, g)
-        },
-        Expression::And(a, b) => {
-            let g: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
-                match *expr {
-                    Expression::False => f(subs1, &FALSE),
-                    Expression::True => {
-                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                        substitute(subs1, b, variable, value, h)
-                    },
-                    _ => {
-                        let h: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
-                            match *expr1 {
-                                Expression::False => f(subs2, &FALSE),
-                                Expression::True => f(subs2, expr1),
-                                _ => {
-                                    let e = Expression::And(expr, expr1);
-                                    f(subs2, &e)
-                                }
-                            }
-                        };
-                        substitute(subs1, b, variable, value, h)
-                    }
-                }
-            };
-            substitute(subs, a, variable, value, g)
-        }
-    }
-}
-
-fn solve_with<'r>(problem : &'r QBF<'r>, v: bool) -> Solution {
-    let solve1: &for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> Solution = &|_, expr| {
-        solve(
-            &QBF {
-                start_at: problem.start_at + 1,
-                quantifiers: &problem.quantifiers[1..],
-                expr: expr
-            })
-    };
-    let subs = Box::new(Substitutions {map: HashMap::new()});
-    substitute(subs, &problem.expr, problem.start_at, v, solve1)
-}
-
-fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
-    if problem.quantifiers.is_empty() {
-        match *problem.expr {
-            Expression::True => Solution::Sat,
-            Expression::False => Solution::Unsat,
-            _ => panic!("free variable")
-        }
-    } else {
-        match problem.quantifiers[0] {
-            Quantifier::ForAll => {
-                match solve_with(problem, false) {
-                    Solution::Sat => solve_with(problem, true),
-                    Solution::Unsat => Solution::Unsat
-                }
-            },
-            Quantifier::Exists => {
-                match solve_with(problem, false) {
-                    Solution::Sat => Solution::Sat,
-                    Solution::Unsat => solve_with(problem, true)
-                }
-            }
-        }
-    }
-}
+use solver::Solution;
+use solver::solve;
 
 fn main() {
     let n = Expression::Var(0);
     let m = Expression::Var(1);
     let e = Expression::And(&n, &m);
-    let e1 = Expression::Not(&e);
     let quantifiers = [Quantifier::Exists, Quantifier::ForAll];
     let q = QBF {
         start_at: 0,
         quantifiers: &quantifiers,
-        expr: &e1
+        expr: &e
     };
     match solve(&q) {
         Solution::Sat => println!("sat"),
