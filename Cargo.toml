@@ -1,0 +1,10 @@
+[package]
+name = "qbf"
+version = "0.1.0"
+authors = ["Daniel Waterworth <da.waterworth@gmail.com>"]
+
+[dependencies]
+
+[[bin]]
+name = "qbf"
+path = "main.rs"
