@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Quantifier {
     Exists,
     ForAll
@@ -9,14 +9,17 @@ pub enum Expression<'r> {
     And(&'r Expression<'r>, &'r Expression<'r>),
     Or(&'r Expression<'r>, &'r Expression<'r>),
     Not(&'r Expression<'r>),
-    Var(u32),
+    Var(u64),
     True,
     False
 }
 
+pub static TRUE: Expression<'static> = Expression::True;
+pub static FALSE: Expression<'static> = Expression::False;
+
 #[derive(Debug)]
 pub struct QBF<'r> {
-    pub start_at: u32,
+    pub start_at: u64,
     pub quantifiers: &'r [Quantifier],
     pub expr: &'r Expression<'r>
 }

@@ -4,15 +4,14 @@ use std::hash::Hash;
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
+use problem::TRUE;
+use problem::FALSE;
 
 #[derive(Debug)]
 pub enum Solution {
     Sat,
     Unsat
 }
-
-static TRUE: Expression<'static> = Expression::True;
-static FALSE: Expression<'static> = Expression::False;
 
 struct Substitutions<'r> {
     map: HashMap<*const (), &'r Expression<'r>>
@@ -29,7 +28,7 @@ fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
 fn substitute<'r, F, X>(
         subs: Box<Substitutions<'r>>,
         expr: &'r Expression<'r>,
-        variable: u32,
+        variable: u64,
         value: bool,
         cb: F) -> X
     where F : for<'r1> Fn(Box<Substitutions<'r1>>, &'r1 Expression<'r1>) -> X {

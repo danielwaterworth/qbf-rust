@@ -6,13 +6,13 @@ use nom::IResult;
 
 use problem::Quantifier;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Literal {
-    polarity: bool,
-    var: String
+    pub polarity: bool,
+    pub var: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     And(Literal, Literal),
     Or(Literal, Literal),
@@ -24,8 +24,15 @@ pub enum Expression {
 
 #[derive(Debug)]
 pub struct Statement {
-    name: String,
-    exp: Expression
+    pub name: String,
+    pub exp: Expression
+}
+
+#[derive(Debug)]
+pub struct Problem {
+    pub quantifiers: Vec<(Quantifier, String)>,
+    pub statements: Vec<Statement>,
+    pub output: Literal
 }
 
 fn string_from_slice(slice: &[u8]) -> String {
@@ -131,7 +138,7 @@ named!(statement<&[u8], Statement >,
         tag!("=") ~
         opt!(space) ~
         exp: expression ~
-        multispace,
+        opt!(multispace),
 
         ||{Statement { name: string_from_slice(name), exp: exp }}
     )
@@ -168,19 +175,19 @@ named!(quantifier<&[u8], (Quantifier, String) >,
     )
 );
 
-named!(file<&[u8], (Vec<(Quantifier, String)>, Vec<Statement>, Expression) >,
+named!(file<&[u8], Problem >,
     chain!(
         quantifiers: many0!(quantifier) ~
         statements: many0!(statement) ~
-        output: expression ~
-        multispace ~
+        output: literal ~
+        opt!(multispace) ~
         eof,
 
-        ||{(quantifiers, statements, output)}
+        ||{Problem {quantifiers: quantifiers, statements: statements, output: output}}
     )
 );
 
-pub fn parse(input: &[u8]) -> (Vec<(Quantifier, String)>, Vec<Statement>, Expression) {
+pub fn parse(input: &[u8]) -> Problem {
     match file(input) {
         IResult::Done(_, o) => o,
         o => panic!("failure to parse: {:?}", o)

@@ -4,34 +4,33 @@ extern crate nom;
 mod problem;
 mod solver;
 mod parser;
+mod introduce;
 
 use std::fs::File;
 use std::io::Read;
-
-use problem::Quantifier;
-use problem::Expression;
-use problem::QBF;
 
 use solver::Solution;
 use solver::solve;
 
 fn main() {
-    let mut f = File::open("input.qbf").unwrap();
-    let mut s = String::new();
-    f.read_to_string(&mut s).unwrap();
-    println!("{:?}", parser::parse(s.as_ref()));
+    std::thread::Builder::new().stack_size(8*1024*1024).spawn(|| {
+        let args: Vec<_> = std::env::args().collect();
+        if !args.len() < 2 {
+            panic!("Expected filename");
+        }
 
-    let n = Expression::Var(0);
-    let m = Expression::Var(1);
-    let e = Expression::And(&n, &m);
-    let quantifiers = [Quantifier::Exists, Quantifier::ForAll];
-    let q = QBF {
-        start_at: 0,
-        quantifiers: &quantifiers,
-        expr: &e
-    };
-    match solve(&q) {
-        Solution::Sat => println!("sat"),
-        Solution::Unsat => println!("unsat")
-    }
+        let mut f = File::open(&args[1]).unwrap();
+        let mut s = String::new();
+        f.read_to_string(&mut s).unwrap();
+        let parsed = parser::parse(s.as_ref());
+
+        let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
+            match solve(&qbf) {
+                Solution::Sat => println!("sat"),
+                Solution::Unsat => println!("unsat")
+            }
+        };
+
+        introduce::with_parsed_problem(parsed, f)
+    }).unwrap().join();
 }
