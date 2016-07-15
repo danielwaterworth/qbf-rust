@@ -78,7 +78,7 @@ fn substitute_inner<'r, F, X>(
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
                             match *expr1 {
                                 Expression::True => f(subs2, &TRUE),
-                                Expression::False => f(subs2, expr1),
+                                Expression::False => f(subs2, expr),
                                 _ => {
                                     let e = Expression::Or(expr, expr1);
                                     f(subs2, &e)
@@ -103,7 +103,7 @@ fn substitute_inner<'r, F, X>(
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
                             match *expr1 {
                                 Expression::False => f(subs2, &FALSE),
-                                Expression::True => f(subs2, expr1),
+                                Expression::True => f(subs2, expr),
                                 _ => {
                                     let e = Expression::And(expr, expr1);
                                     f(subs2, &e)
