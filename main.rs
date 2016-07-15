@@ -25,7 +25,7 @@ fn main() {
         let parsed = parser::parse(s.as_ref());
 
         let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
-            match solve(&qbf, 0) {
+            match solve(&qbf) {
                 Solution::Sat => println!("sat"),
                 Solution::Unsat => println!("unsat")
             }
