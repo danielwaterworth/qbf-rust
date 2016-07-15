@@ -8,4 +8,4 @@ nom = "^1.2.3"
 
 [[bin]]
 name = "qbf"
-path = "main.rs"
+path = "src/main.rs"

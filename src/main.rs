@@ -1,17 +1,17 @@
 #[macro_use]
 extern crate nom;
 
+mod solve;
 mod problem;
 mod substitute;
-mod solver;
 mod parser;
 mod introduce;
 
 use std::fs::File;
 use std::io::Read;
 
-use solver::Solution;
-use solver::solve;
+use solve::Solution;
+use solve::solve;
 
 fn main() {
     std::thread::Builder::new().stack_size(8*1024*1024).spawn(|| {
