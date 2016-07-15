@@ -1,15 +1,9 @@
-use std::collections::HashMap;
-use std::hash::Hash;
-
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
-use problem::TRUE;
-use problem::FALSE;
 use problem::opposite_quantifier;
 
 use substitute::substitute;
-use substitute::Substitutions;
 
 #[derive(Debug)]
 pub enum Solution {
@@ -46,7 +40,7 @@ fn solve_inner_with<'r>(
             expr: &'r Expression<'r>,
             value: bool
         ) -> Solution {
-    let solve1: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> Solution = &|_, expr1| {
+    let solve1: &for<'r1> Fn(&'r1 Expression<'r1>) -> Solution = &|expr1| {
         solve_inner(
             current_quantifier,
             current_block - 1,
@@ -55,9 +49,8 @@ fn solve_inner_with<'r>(
             expr1
         )
     };
-    let subs = Substitutions {map: HashMap::new()};
     println!("substitute {:?} {:?}", start_at, value);
-    substitute(subs, expr, start_at, value, solve1)
+    substitute(expr, start_at, value, solve1)
 }
 
 fn solve_inner<'r>(

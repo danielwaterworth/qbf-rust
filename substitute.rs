@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use problem::Quantifier;
 use problem::Expression;
-use problem::QBF;
 use problem::TRUE;
 use problem::FALSE;
 
-pub struct Substitutions<'r> {
-    pub map: HashMap<*const (), &'r Expression<'r>>
+struct Substitutions<'r> {
+    map: HashMap<*const (), &'r Expression<'r>>
 }
 
 fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
@@ -19,7 +17,7 @@ fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
     }
 }
 
-pub fn substitute<'r, F, X>(
+fn substitute_inner<'r, F, X>(
         subs: Substitutions<'r>,
         expr: &'r Expression<'r>,
         variable: u64,
@@ -64,7 +62,7 @@ pub fn substitute<'r, F, X>(
                     }
                 }
             };
-            substitute(subs, a, variable, value, g)
+            substitute_inner(subs, a, variable, value, g)
         },
         Expression::Or(a, b) => {
             let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
@@ -72,7 +70,7 @@ pub fn substitute<'r, F, X>(
                     Expression::True => f(subs1, &TRUE),
                     Expression::False => {
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                        substitute(subs1, b, variable, value, h)
+                        substitute_inner(subs1, b, variable, value, h)
                     },
                     _ => {
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
@@ -85,11 +83,11 @@ pub fn substitute<'r, F, X>(
                                 }
                             }
                         };
-                        substitute(subs1, b, variable, value, h)
+                        substitute_inner(subs1, b, variable, value, h)
                     }
                 }
             };
-            substitute(subs, a, variable, value, g)
+            substitute_inner(subs, a, variable, value, g)
         },
         Expression::And(a, b) => {
             let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
@@ -97,7 +95,7 @@ pub fn substitute<'r, F, X>(
                     Expression::False => f(subs1, &FALSE),
                     Expression::True => {
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                        substitute(subs1, b, variable, value, h)
+                        substitute_inner(subs1, b, variable, value, h)
                     },
                     _ => {
                         let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
@@ -110,11 +108,22 @@ pub fn substitute<'r, F, X>(
                                 }
                             }
                         };
-                        substitute(subs1, b, variable, value, h)
+                        substitute_inner(subs1, b, variable, value, h)
                     }
                 }
             };
-            substitute(subs, a, variable, value, g)
+            substitute_inner(subs, a, variable, value, g)
         }
     }
+}
+
+pub fn substitute<'r, F, X>(
+        expr: &'r Expression<'r>,
+        variable: u64,
+        value: bool,
+        cb: F) -> X
+    where F : for<'r1> Fn(&'r1 Expression<'r1>) -> X {
+    let subs = Substitutions {map: HashMap::new()};
+    let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|_, expr1| cb(expr1);
+    substitute_inner(subs, expr, variable, value, f)
 }
