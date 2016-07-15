@@ -125,20 +125,21 @@ fn substitute<'r, F, X>(
     }
 }
 
-fn solve_with<'r>(problem : &'r QBF<'r>, v: bool) -> Solution {
+fn solve_with<'r>(problem : &'r QBF<'r>, start_at: u64, v: bool) -> Solution {
     let solve1: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> Solution = &|_, expr| {
         solve(
             &QBF {
-                start_at: problem.start_at + 1,
                 quantifiers: &problem.quantifiers[1..],
                 expr: expr
-            })
+            },
+            start_at + 1
+        )
     };
     let subs = Substitutions {map: HashMap::new()};
-    substitute(subs, &problem.expr, problem.start_at, v, solve1)
+    substitute(subs, &problem.expr, start_at, v, solve1)
 }
 
-pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
+pub fn solve<'r>(problem: &'r QBF<'r>, start_at: u64) -> Solution {
     if problem.quantifiers.is_empty() {
         match *problem.expr {
             Expression::True => Solution::Sat,
@@ -148,15 +149,15 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
     } else {
         match problem.quantifiers[0] {
             Quantifier::ForAll => {
-                match solve_with(problem, false) {
-                    Solution::Sat => solve_with(problem, true),
+                match solve_with(problem, start_at, false) {
+                    Solution::Sat => solve_with(problem, start_at, true),
                     Solution::Unsat => Solution::Unsat
                 }
             },
             Quantifier::Exists => {
-                match solve_with(problem, false) {
+                match solve_with(problem, start_at, false) {
                     Solution::Sat => Solution::Sat,
-                    Solution::Unsat => solve_with(problem, true)
+                    Solution::Unsat => solve_with(problem, start_at, true)
                 }
             }
         }

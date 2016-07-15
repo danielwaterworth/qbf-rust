@@ -19,7 +19,6 @@ pub static FALSE: Expression<'static> = Expression::False;
 
 #[derive(Debug)]
 pub struct QBF<'r> {
-    pub start_at: u64,
     pub quantifiers: &'r [Quantifier],
     pub expr: &'r Expression<'r>
 }

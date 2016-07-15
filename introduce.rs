@@ -92,7 +92,6 @@ pub fn with_parsed_problem<F, X>(mut parsed: parser::Problem, f: F) -> X
 
     let g: &for<'r1> Fn(HashMap<String, Exp<'r1>>, _) -> X = &|expressions, _| {
         f(problem::QBF {
-            start_at: 0,
             quantifiers: quantifiers1.as_slice(),
             expr: lookup_literal(&expressions, output.clone()).e
         })
