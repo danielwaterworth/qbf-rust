@@ -22,8 +22,6 @@ fn main() {
         f.read_to_string(&mut s).unwrap();
         let parsed = parser::parse(s.as_ref());
 
-        println!("{:?}", &parsed);
-
         let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
             match solve(&qbf) {
                 Solution::Sat => println!("sat"),

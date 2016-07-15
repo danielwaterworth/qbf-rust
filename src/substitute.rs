@@ -34,8 +34,6 @@ fn substitute_inner<'r, F, X>(
 
     let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|mut subs1, expr1| {
         subs1.map.insert(expr_ptr, expr1);
-        println!("substitute_inner {:?}", &expr);
-        println!("result {:?}", &expr1);
         cb(subs1, expr1)
     };
 

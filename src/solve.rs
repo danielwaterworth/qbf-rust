@@ -49,7 +49,6 @@ fn solve_inner_with<'r>(
             expr1
         )
     };
-    println!("substitute {:?} {:?}", start_at, value);
     substitute(expr, start_at, value, solve1)
 }
 
