@@ -114,7 +114,7 @@ named!(true_<&[u8], Expression >,
 
 named!(false_<&[u8], Expression >,
     chain!(
-        tag!("true"),
+        tag!("false"),
 
         ||{Expression::False}
     )
