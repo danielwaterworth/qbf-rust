@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate nom;
+extern crate picorust;
 
 pub mod solve;
 pub mod problem;
