@@ -1,5 +1,5 @@
 use nom::eof;
-use nom::alpha;
+use nom::alphanumeric;
 use nom::space;
 use nom::multispace;
 use nom::IResult;
@@ -43,7 +43,7 @@ fn string_from_slice(slice: &[u8]) -> String {
 
 named!(positive_literal<&[u8], Literal >,
     chain!(
-        name: alpha,
+        name: alphanumeric,
 
         ||{Literal {var: string_from_slice(name), polarity: true}}
     )
@@ -52,7 +52,7 @@ named!(positive_literal<&[u8], Literal >,
 named!(negative_literal<&[u8], Literal >,
     chain!(
         tag!("~") ~
-        name: alpha,
+        name: alphanumeric,
 
         ||{Literal {var: string_from_slice(name), polarity: false}}
     )
@@ -133,7 +133,7 @@ named!(expression<&[u8], Expression >,
 
 named!(statement<&[u8], Statement >,
     chain!(
-        name: alpha ~
+        name: alphanumeric ~
         opt!(space) ~
         tag!("=") ~
         opt!(space) ~
@@ -168,7 +168,7 @@ named!(quantifier<&[u8], (Quantifier, String) >,
                 exists_
             ) ~
         multispace ~
-        name: alpha ~
+        name: alphanumeric ~
         multispace,
 
         || {(quantifier, string_from_slice(name))}
