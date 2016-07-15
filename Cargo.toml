@@ -9,3 +9,7 @@ nom = "^1.2.3"
 [[bin]]
 name = "qbf"
 path = "src/main.rs"
+
+[lib]
+name = "qbf"
+path = "src/lib.rs"
