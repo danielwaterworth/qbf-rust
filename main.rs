@@ -2,6 +2,7 @@
 extern crate nom;
 
 mod problem;
+mod substitute;
 mod solver;
 mod parser;
 mod introduce;
