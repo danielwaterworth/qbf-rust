@@ -11,7 +11,7 @@ use qbf::solve::Solution;
 use qbf::solve::solve;
 
 fn main() {
-    std::thread::Builder::new().stack_size(8*1024*1024).spawn(|| {
+    std::thread::Builder::new().stack_size(80*1024*1024).spawn(|| {
         let args: Vec<_> = std::env::args().collect();
         if !args.len() < 2 {
             panic!("Expected filename");
