@@ -135,7 +135,7 @@ fn substitute_inner<'r, F, X, S>(
             }
         },
         &Expression::Not(ref a) => {
-            let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>, S) -> X = &|subs1, expr1, s1| {
+            substitute_inner(subs, a, variable, value, |subs1, expr1, s1| {
                 match expr1 {
                     &Expression::True =>
                         substitute_end(subs1, &FALSE, &cb, s1),
@@ -146,8 +146,7 @@ fn substitute_inner<'r, F, X, S>(
                         substitute_end(subs1, &e, &cb, s1)
                     }
                 }
-            };
-            substitute_inner(subs, a, variable, value, g, s)
+            }, s)
         },
         &Expression::Or(_, ref a, ref b) => {
             substitute_or(subs, a, b, variable, value, f, s)
