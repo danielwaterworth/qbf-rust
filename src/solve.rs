@@ -65,7 +65,7 @@ fn solve_inner<'r>(
         &Expression::True => return Solution::Sat,
         &Expression::False => return Solution::Unsat,
         _ => {}
-    }
+    };
 
     if current_block == 0 {
         if blocks.len() == 0 {
