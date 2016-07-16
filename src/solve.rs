@@ -70,7 +70,7 @@ fn solve_inner<'r>(
     }
 
     let mut solve_with = |b| {
-         let solve1: &for<'r1> Fn(&'r1 Expression<'r1>) -> Solution = &|expr1| {
+        substitute(expr, start_at, b, |expr1, _| {
             solve_inner(
                 current_quantifier,
                 current_block - 1,
@@ -78,8 +78,7 @@ fn solve_inner<'r>(
                 start_at + 1,
                 expr1
             )
-        };
-        substitute(expr, start_at, b, solve1)
+        }, ())
     };
 
     match current_quantifier {
