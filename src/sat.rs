@@ -11,7 +11,7 @@ pub enum Solution {
 
 fn tseytin<'r>(
             subs: &mut HashMap<*const (), i32>,
-            stats: &mut Vec<Vec<i32>>,
+            pico: &mut picosat::PicoSAT,
             expr: &'r Expression<'r>,
             start_at: &mut i32
         ) -> i32 {
@@ -28,23 +28,27 @@ fn tseytin<'r>(
     let output =
         match expr {
             &Expression::And(_, a, b) => {
-                let a_v = tseytin(subs, stats, a, start_at);
-                let b_v = tseytin(subs, stats, b, start_at);
+                let a_v = tseytin(subs, pico, a, start_at);
+                let b_v = tseytin(subs, pico, b, start_at);
                 let c_v = *start_at;
                 *start_at += 2;
-                stats.extend(vec![vec![c_v, -a_v, -b_v], vec![-c_v, a_v], vec![-c_v, b_v]]);
+                picosat::add_arg(pico, &[c_v, -a_v, -b_v]);
+                picosat::add_arg(pico, &[-c_v, a_v]);
+                picosat::add_arg(pico, &[-c_v, b_v]);
                 c_v
             },
             &Expression::Or(_, a, b) => {
-                let a_v = tseytin(subs, stats, a, start_at);
-                let b_v = tseytin(subs, stats, b, start_at);
+                let a_v = tseytin(subs, pico, a, start_at);
+                let b_v = tseytin(subs, pico, b, start_at);
                 let c_v = *start_at;
                 *start_at += 2;
-                stats.extend(vec![vec![-c_v, a_v, b_v], vec![c_v, -a_v], vec![c_v, -b_v]]);
+                picosat::add_arg(pico, &[-c_v, a_v, b_v]);
+                picosat::add_arg(pico, &[c_v, -a_v]);
+                picosat::add_arg(pico, &[c_v, -b_v]);
                 c_v
             },
             &Expression::Not(a) => {
-                -tseytin(subs, stats, a, start_at)
+                -tseytin(subs, pico, a, start_at)
             },
             &Expression::True => {
                 1
@@ -63,21 +67,33 @@ fn tseytin<'r>(
     output
 }
 
-pub fn solve<'r>(expr: &'r Expression<'r>) -> Solution {
-    let mut start_at = 3;
-    let mut subs = HashMap::new();
-    let mut stats = vec![vec![1]];
-    let output = tseytin(&mut subs, &mut stats, expr, &mut start_at);
-    stats.push(vec![output]);
-    let mut solver = picosat::init();
+pub struct SATSolver {
+    pico: picosat::PicoSAT
+}
 
-    for statement in stats {
-        picosat::add_arg(&mut solver, statement.as_slice());
+impl SATSolver {
+    pub fn new<'r>(expr: &'r Expression<'r>) -> SATSolver {
+        let mut start_at = 3;
+        let mut subs = HashMap::new();
+        let mut solver = picosat::init();
+        let output = tseytin(&mut subs, &mut solver, expr, &mut start_at);
+        picosat::add_arg(&mut solver, &[output]);
+        SATSolver { pico: solver }
     }
 
-    match picosat::sat(&mut solver, -1) as isize {
-        picosat::PICOSAT_SATISFIABLE => Solution::Sat,
-        picosat::PICOSAT_UNSATISFIABLE => Solution::Unsat,
-        _ => panic!("unknown")
+    pub fn solve(&mut self) -> Solution {
+        match picosat::sat(&mut self.pico, -1) as isize {
+            picosat::PICOSAT_SATISFIABLE => Solution::Sat,
+            picosat::PICOSAT_UNSATISFIABLE => Solution::Unsat,
+            _ => panic!("unknown")
+        }
+    }
+
+    pub fn set_var(&mut self, variable: u64, value: bool) {
+        panic!("foo")
+    }
+
+    pub fn unset(&mut self) {
+        panic!("foo")
     }
 }

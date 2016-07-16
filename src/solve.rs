@@ -1,5 +1,6 @@
-use sat;
+use sat::SATSolver;
 
+use problem;
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
@@ -34,26 +35,6 @@ fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u64>) {
     return (first_quantifier, output);
 }
 
-fn solve_inner_with<'r>(
-            current_quantifier: Quantifier,
-            current_block: u64,
-            blocks: &[u64],
-            start_at: u64,
-            expr: &'r Expression<'r>,
-            value: bool
-        ) -> Solution {
-    let solve1: &for<'r1> Fn(&'r1 Expression<'r1>) -> Solution = &|expr1| {
-        solve_inner(
-            current_quantifier,
-            current_block - 1,
-            blocks,
-            start_at + 1,
-            expr1
-        )
-    };
-    substitute(expr, start_at, value, solve1)
-}
-
 fn solve_inner<'r>(
             mut current_quantifier: Quantifier,
             mut current_block: u64,
@@ -77,33 +58,6 @@ fn solve_inner<'r>(
         }
     };
 
-    if blocks.len() == 0 && current_block > 10 {
-        return
-            match current_quantifier {
-                Quantifier::ForAll => {
-                    let e = Expression::Not(expr);
-                    match sat::solve(&e) {
-                        sat::Solution::Sat => {
-                            Solution::Unsat
-                        }
-                        sat::Solution::Unsat => {
-                            Solution::Sat
-                        },
-                    }
-                },
-                Quantifier::Exists => {
-                    match sat::solve(&expr) {
-                        sat::Solution::Sat => {
-                            Solution::Sat
-                        }
-                        sat::Solution::Unsat => {
-                            Solution::Unsat
-                        },
-                    }
-                }
-            };
-    };
-
     if !expr.has_var(start_at) {
         return
             solve_inner(
@@ -115,20 +69,33 @@ fn solve_inner<'r>(
             );
     }
 
+    let mut solve_with = |b| {
+         let solve1: &for<'r1> Fn(&'r1 Expression<'r1>) -> Solution = &|expr1| {
+            solve_inner(
+                current_quantifier,
+                current_block - 1,
+                blocks,
+                start_at + 1,
+                expr1
+            )
+        };
+        substitute(expr, start_at, b, solve1)
+    };
+
     match current_quantifier {
         Quantifier::ForAll => {
-            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+            match solve_with(false) {
                 Solution::Sat => {
-                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+                    solve_with(true)
                 },
                 Solution::Unsat => Solution::Unsat
             }
         },
         Quantifier::Exists => {
-            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+            match solve_with(false) {
                 Solution::Sat => Solution::Sat,
                 Solution::Unsat => {
-                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+                    solve_with(true)
                 }
             }
         }
