@@ -7,7 +7,7 @@ pub mod problem;
 pub mod substitute;
 pub mod parser;
 pub mod introduce;
-pub mod cnf;
+pub mod sat;
 
 #[cfg(test)]
 mod tests {

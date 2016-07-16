@@ -24,7 +24,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "picorust"
 version = "0.1.0"
-source = "git+https://github.com/DanielWaterworth/picorust.git#57df06b54af793ab9276be362c1e711ad01ac7cc"
+source = "git+https://github.com/DanielWaterworth/picorust.git#be1f3ea9b3c7a09989a7ce709049557a077e30be"
 dependencies = [
  "gcc 0.3.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",

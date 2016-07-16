@@ -1,3 +1,5 @@
+use sat;
+
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
@@ -71,6 +73,33 @@ fn solve_inner<'r>(
             current_block = blocks[0];
             blocks = &blocks[1..];
         }
+    };
+
+    if blocks.len() == 0 && current_block > 10 {
+        return
+            match current_quantifier {
+                Quantifier::ForAll => {
+                    let e = Expression::Not(expr);
+                    match sat::solve(&e) {
+                        sat::Solution::Sat => {
+                            Solution::Unsat
+                        }
+                        sat::Solution::Unsat => {
+                            Solution::Sat
+                        },
+                    }
+                },
+                Quantifier::Exists => {
+                    match sat::solve(&expr) {
+                        sat::Solution::Sat => {
+                            Solution::Sat
+                        }
+                        sat::Solution::Unsat => {
+                            Solution::Unsat
+                        },
+                    }
+                }
+            };
     };
 
     match current_quantifier {
