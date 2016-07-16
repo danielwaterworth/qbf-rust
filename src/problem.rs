@@ -33,32 +33,38 @@ impl<'r> Expression<'r> {
             _ => false
         }
     }
-}
 
-fn variables<'r>(a: &'r Expression<'r>) -> Vars {
-    match a {
-        &Expression::And(ref v, _, _) => v.clone(),
-        &Expression::Or(ref v, _, _) => v.clone(),
-        &Expression::Not(ref v) => variables(v),
-        &Expression::Var(v) => {
-            let mut output = Vars::new();
-            output.add(v);
-            output
-        },
-        _ => Vars::new()
+    fn with_variables<F, X>(&self, f: F) -> X
+        where F: for<'r1> Fn(&'r1 Vars) -> X {
+        match self {
+            &Expression::And(ref v, _, _) => f(v),
+            &Expression::Or(ref v, _, _) => f(v),
+            &Expression::Not(ref v) => v.with_variables(f),
+            &Expression::Var(v) => {
+                let mut output = Vars::new();
+                output.add(v);
+                f(&output)
+            },
+            _ => f(&Vars::new())
+        }
+    }
+
+    fn variables(&self) -> Vars {
+        let f: &for<'r1> Fn(&'r1 Vars) -> Vars = &|v| v.clone();
+        self.with_variables(f)
     }
 }
 
 pub fn and<'r>(a: &'r Expression<'r>, b: &'r Expression<'r>) -> Expression<'r> {
-    let mut v_a = variables(a);
-    let mut v_b = variables(b);
+    let mut v_a = a.variables();
+    let mut v_b = b.variables();
     v_a.union(&mut v_b);
     Expression::And(v_a, a, b)
 }
 
 pub fn or<'r>(a: &'r Expression<'r>, b: &'r Expression<'r>) -> Expression<'r> {
-    let mut v_a = variables(a);
-    let mut v_b = variables(b);
+    let mut v_a = a.variables();
+    let mut v_b = b.variables();
     v_a.union(&mut v_b);
     Expression::Or(v_a, a, b)
 }

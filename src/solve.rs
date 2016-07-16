@@ -61,13 +61,15 @@ fn solve_inner<'r>(
             start_at: u64,
             expr: &'r Expression<'r>
         ) -> Solution {
+    match expr {
+        &Expression::True => return Solution::Sat,
+        &Expression::False => return Solution::Unsat,
+        _ => {}
+    }
+
     if current_block == 0 {
         if blocks.len() == 0 {
-            match *expr {
-                Expression::True => return Solution::Sat,
-                Expression::False => return Solution::Unsat,
-                _ => panic!("free variable")
-            }
+            panic!("free variable")
         } else {
             current_quantifier = opposite_quantifier(current_quantifier);
             current_block = blocks[0];
@@ -102,23 +104,33 @@ fn solve_inner<'r>(
             };
     };
 
-    match current_quantifier {
-        Quantifier::ForAll => {
-            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
-                Solution::Sat => {
-                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
-                },
-                Solution::Unsat => Solution::Unsat
-            }
-        },
-        Quantifier::Exists => {
-            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
-                Solution::Sat => Solution::Sat,
-                Solution::Unsat => {
-                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+    if expr.has_var(start_at) {
+        match current_quantifier {
+            Quantifier::ForAll => {
+                match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+                    Solution::Sat => {
+                        solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+                    },
+                    Solution::Unsat => Solution::Unsat
+                }
+            },
+            Quantifier::Exists => {
+                match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+                    Solution::Sat => Solution::Sat,
+                    Solution::Unsat => {
+                        solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+                    }
                 }
             }
         }
+    } else {
+        solve_inner(
+            current_quantifier,
+            current_block - 1,
+            blocks,
+            start_at + 1,
+            expr
+        )
     }
 }
 
