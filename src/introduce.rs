@@ -53,18 +53,42 @@ fn with_statements<'r, S, F, X>(expressions: HashMap<String, Exp<'r>>, mut state
                 parser::Expression::And(a, b) => {
                     let a1 = lookup_literal(&expressions, a);
                     let b1 = lookup_literal(&expressions, b);
-                    let e = problem::Expression::And(a1.e, b1.e);
-                    let e_ = problem::Expression::Not(&e);
-                    let e1 = Exp { e: &e, e_: &e_ };
-                    with_statement(expressions, statements, statement.name, e1, f)
+                    match (a1.e, b1.e) {
+                        (&problem::Expression::False, _) =>
+                            with_statement(expressions, statements, statement.name, FALSE, f),
+                        (_, &problem::Expression::False) =>
+                            with_statement(expressions, statements, statement.name, FALSE, f),
+                        (&problem::Expression::True, _) =>
+                            with_statement(expressions, statements, statement.name, b1, f),
+                        (_, &problem::Expression::True) =>
+                            with_statement(expressions, statements, statement.name, a1, f),
+                        _ => {
+                            let e = problem::Expression::And(a1.e, b1.e);
+                            let e_ = problem::Expression::Not(&e);
+                            let e1 = Exp { e: &e, e_: &e_ };
+                            with_statement(expressions, statements, statement.name, e1, f)
+                        }
+                    }
                 },
                 parser::Expression::Or(a, b) => {
                     let a1 = lookup_literal(&expressions, a);
                     let b1 = lookup_literal(&expressions, b);
-                    let e = problem::Expression::Or(a1.e, b1.e);
-                    let e_ = problem::Expression::Not(&e);
-                    let e1 = Exp { e: &e, e_: &e_ };
-                    with_statement(expressions, statements, statement.name, e1, f)
+                    match (a1.e, b1.e) {
+                        (&problem::Expression::False, _) =>
+                            with_statement(expressions, statements, statement.name, b1, f),
+                        (_, &problem::Expression::False) =>
+                            with_statement(expressions, statements, statement.name, a1, f),
+                        (&problem::Expression::True, _) =>
+                            with_statement(expressions, statements, statement.name, TRUE, f),
+                        (_, &problem::Expression::True) =>
+                            with_statement(expressions, statements, statement.name, TRUE, f),
+                        _ => {
+                            let e = problem::Expression::Or(a1.e, b1.e);
+                            let e_ = problem::Expression::Not(&e);
+                            let e1 = Exp { e: &e, e_: &e_ };
+                            with_statement(expressions, statements, statement.name, e1, f)
+                        }
+                    }
                 },
                 parser::Expression::Lit(l) => {
                     let a = lookup_literal(&expressions, l);
