@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use parser;
 use problem;
 
+use parser::Expression as PExp;
+use problem::Expression as QExp;
+
 #[derive(Debug, Copy, Clone)]
 struct Exp<'r> {
-    e: &'r problem::Expression<'r>,
-    e_: &'r problem::Expression<'r>
+    e: &'r QExp<'r>,
+    e_: &'r QExp<'r>
 }
 
 fn not<'r>(exp: Exp<'r>) -> Exp<'r> {
@@ -42,55 +45,55 @@ fn with_statements<'r, S, F, X>(expressions: HashMap<String, Exp<'r>>, mut state
     match statements.next() {
         Some(statement) => {
             match statement.exp {
-                parser::Expression::True =>
+                PExp::True =>
                     with_statement(expressions, statements, statement.name, TRUE, f),
-                parser::Expression::False =>
+                PExp::False =>
                     with_statement(expressions, statements, statement.name, FALSE, f),
-                parser::Expression::Not(a) => {
+                PExp::Not(a) => {
                     let a1 = lookup_literal(&expressions, a);
                     with_statement(expressions, statements, statement.name, not(a1), f)
                 },
-                parser::Expression::And(a, b) => {
+                PExp::And(a, b) => {
                     let a1 = lookup_literal(&expressions, a);
                     let b1 = lookup_literal(&expressions, b);
                     match (a1.e, b1.e) {
-                        (&problem::Expression::False, _) =>
+                        (&QExp::False, _) =>
                             with_statement(expressions, statements, statement.name, FALSE, f),
-                        (_, &problem::Expression::False) =>
+                        (_, &QExp::False) =>
                             with_statement(expressions, statements, statement.name, FALSE, f),
-                        (&problem::Expression::True, _) =>
+                        (&QExp::True, _) =>
                             with_statement(expressions, statements, statement.name, b1, f),
-                        (_, &problem::Expression::True) =>
+                        (_, &QExp::True) =>
                             with_statement(expressions, statements, statement.name, a1, f),
                         _ => {
-                            let e = problem::Expression::And(a1.e, b1.e);
-                            let e_ = problem::Expression::Not(&e);
+                            let e = QExp::And(a1.e, b1.e);
+                            let e_ = QExp::Not(&e);
                             let e1 = Exp { e: &e, e_: &e_ };
                             with_statement(expressions, statements, statement.name, e1, f)
                         }
                     }
                 },
-                parser::Expression::Or(a, b) => {
+                PExp::Or(a, b) => {
                     let a1 = lookup_literal(&expressions, a);
                     let b1 = lookup_literal(&expressions, b);
                     match (a1.e, b1.e) {
-                        (&problem::Expression::False, _) =>
+                        (&QExp::False, _) =>
                             with_statement(expressions, statements, statement.name, b1, f),
-                        (_, &problem::Expression::False) =>
+                        (_, &QExp::False) =>
                             with_statement(expressions, statements, statement.name, a1, f),
-                        (&problem::Expression::True, _) =>
+                        (&QExp::True, _) =>
                             with_statement(expressions, statements, statement.name, TRUE, f),
-                        (_, &problem::Expression::True) =>
+                        (_, &QExp::True) =>
                             with_statement(expressions, statements, statement.name, TRUE, f),
                         _ => {
-                            let e = problem::Expression::Or(a1.e, b1.e);
-                            let e_ = problem::Expression::Not(&e);
+                            let e = QExp::Or(a1.e, b1.e);
+                            let e_ = QExp::Not(&e);
                             let e1 = Exp { e: &e, e_: &e_ };
                             with_statement(expressions, statements, statement.name, e1, f)
                         }
                     }
                 },
-                parser::Expression::Lit(l) => {
+                PExp::Lit(l) => {
                     let a = lookup_literal(&expressions, l);
                     with_statement(expressions, statements, statement.name, a, f)
                 }
@@ -109,8 +112,8 @@ pub fn with_parsed_problem<F, X>(mut parsed: parser::Problem, f: F) -> X
     let output = parsed.output;
 
     let (quantifiers1, mut names) : (Vec<_>, Vec<_>) = quantifiers.drain(..).unzip();
-    let variable_expressions: Vec<_> = (0..(quantifiers1.len() as u64)).map(problem::Expression::Var).collect();
-    let complements: Vec<_> = variable_expressions.iter().map(problem::Expression::Not).collect();
+    let variable_expressions: Vec<_> = (0..(quantifiers1.len() as u64)).map(QExp::Var).collect();
+    let complements: Vec<_> = variable_expressions.iter().map(QExp::Not).collect();
     let merged = variable_expressions.iter().zip(complements.iter()).map(|(e, e_)| Exp {e: e, e_: e_});
     let expressions: HashMap<_, _> = names.drain(..).zip(merged).collect();
 
