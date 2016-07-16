@@ -90,10 +90,20 @@ impl SATSolver {
     }
 
     pub fn set_var(&mut self, variable: u64, value: bool) {
-        panic!("foo")
+        let n1 = (variable + 1) * 2;
+        assert!(n1 % 2 == 0);
+        let n2 = n1 as i32;
+        assert!(n2 as u64 == n1);
+
+        picosat::push(&mut self.pico);
+        if value {
+            picosat::add_arg(&mut self.pico, &[n2]);
+        } else {
+            picosat::add_arg(&mut self.pico, &[-n2]);
+        }
     }
 
     pub fn unset(&mut self) {
-        panic!("foo")
+        picosat::pop(&mut self.pico);
     }
 }
