@@ -91,6 +91,11 @@ fn substitute_inner<'r, F, X>(
         value: bool,
         cb: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
+
+    if !expr.has_var(variable) {
+        return cb(subs, expr);
+    };
+
     let expr_ptr = (expr as *const _) as *const ();
     match get_clone(&subs.map, &expr_ptr) {
         Some(expr1) => {
@@ -131,8 +136,8 @@ fn substitute_inner<'r, F, X>(
             };
             substitute_inner(subs, a, variable, value, g)
         },
-        &Expression::Or(ref a, ref b) => substitute_or(subs, a, b, variable, value, f),
-        &Expression::And(ref a, ref b) => substitute_and(subs, a, b, variable, value, f)
+        &Expression::Or(_, ref a, ref b) => substitute_or(subs, a, b, variable, value, f),
+        &Expression::And(_, ref a, ref b) => substitute_and(subs, a, b, variable, value, f)
     }
 }
 

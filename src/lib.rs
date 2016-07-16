@@ -1,7 +1,9 @@
 #[macro_use]
 extern crate nom;
 extern crate picorust;
+extern crate bit_vec;
 
+mod vars;
 pub mod solve;
 pub mod problem;
 pub mod substitute;

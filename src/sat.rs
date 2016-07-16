@@ -27,7 +27,7 @@ fn tseytin<'r>(
     assert!(*start_at % 2 == 1);
     let output =
         match expr {
-            &Expression::And(a, b) => {
+            &Expression::And(_, a, b) => {
                 let a_v = tseytin(subs, stats, a, start_at);
                 let b_v = tseytin(subs, stats, b, start_at);
                 let c_v = *start_at;
@@ -35,7 +35,7 @@ fn tseytin<'r>(
                 stats.extend(vec![vec![c_v, -a_v, -b_v], vec![-c_v, a_v], vec![-c_v, b_v]]);
                 c_v
             },
-            &Expression::Or(a, b) => {
+            &Expression::Or(_, a, b) => {
                 let a_v = tseytin(subs, stats, a, start_at);
                 let b_v = tseytin(subs, stats, b, start_at);
                 let c_v = *start_at;

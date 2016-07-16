@@ -2,9 +2,15 @@
 name = "qbf"
 version = "0.1.0"
 dependencies = [
+ "bit-vec 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "picorust 0.1.0 (git+https://github.com/DanielWaterworth/picorust.git)",
 ]
+
+[[package]]
+name = "bit-vec"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "gcc"
