@@ -66,8 +66,8 @@ fn with_statements<'r, S, F, X>(expressions: HashMap<String, Exp<'r>>, mut state
                         (_, &QExp::True) =>
                             with_statement(expressions, statements, statement.name, a1, f),
                         _ => {
-                            let e = QExp::And(a1.e, b1.e);
-                            let e_ = QExp::Not(&e);
+                            let e = problem::and(a1.e, b1.e);
+                            let e_ = problem::not(&e);
                             let e1 = Exp { e: &e, e_: &e_ };
                             with_statement(expressions, statements, statement.name, e1, f)
                         }
@@ -86,8 +86,8 @@ fn with_statements<'r, S, F, X>(expressions: HashMap<String, Exp<'r>>, mut state
                         (_, &QExp::True) =>
                             with_statement(expressions, statements, statement.name, TRUE, f),
                         _ => {
-                            let e = QExp::Or(a1.e, b1.e);
-                            let e_ = QExp::Not(&e);
+                            let e = problem::or(a1.e, b1.e);
+                            let e_ = problem::not(&e);
                             let e1 = Exp { e: &e, e_: &e_ };
                             with_statement(expressions, statements, statement.name, e1, f)
                         }
@@ -113,7 +113,7 @@ pub fn with_parsed_problem<F, X>(mut parsed: parser::Problem, f: F) -> X
 
     let (quantifiers1, mut names) : (Vec<_>, Vec<_>) = quantifiers.drain(..).unzip();
     let variable_expressions: Vec<_> = (0..(quantifiers1.len() as u64)).map(QExp::Var).collect();
-    let complements: Vec<_> = variable_expressions.iter().map(QExp::Not).collect();
+    let complements: Vec<_> = variable_expressions.iter().map(problem::not).collect();
     let merged = variable_expressions.iter().zip(complements.iter()).map(|(e, e_)| Exp {e: e, e_: e_});
     let expressions: HashMap<_, _> = names.drain(..).zip(merged).collect();
 

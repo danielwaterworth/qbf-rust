@@ -21,6 +21,18 @@ pub enum Expression<'r> {
     False
 }
 
+pub fn and<'r>(a: &'r Expression<'r>, b: &'r Expression<'r>) -> Expression<'r> {
+    Expression::And(a, b)
+}
+
+pub fn or<'r>(a: &'r Expression<'r>, b: &'r Expression<'r>) -> Expression<'r> {
+    Expression::Or(a, b)
+}
+
+pub fn not<'r>(a: &'r Expression<'r>) -> Expression<'r> {
+    Expression::Not(a)
+}
+
 pub static TRUE: Expression<'static> = Expression::True;
 pub static FALSE: Expression<'static> = Expression::False;
 

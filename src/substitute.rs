@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use problem;
 use problem::Expression;
 use problem::TRUE;
 use problem::FALSE;
@@ -26,19 +27,19 @@ fn substitute_and<'r, F, X>(
         f: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
     let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
-        match *expr {
-            Expression::False => f(subs1, &FALSE),
-            Expression::True => {
+        match expr {
+            &Expression::False => f(subs1, &FALSE),
+            &Expression::True => {
                 let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
                 substitute_inner(subs1, b, variable, value, h)
             },
             _ => {
                 let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
-                    match *expr1 {
-                        Expression::False => f(subs2, &FALSE),
-                        Expression::True => f(subs2, expr),
+                    match expr1 {
+                        &Expression::False => f(subs2, &FALSE),
+                        &Expression::True => f(subs2, expr),
                         _ => {
-                            let e = Expression::And(expr, expr1);
+                            let e = problem::and(expr, expr1);
                             f(subs2, &e)
                         }
                     }
@@ -59,19 +60,19 @@ fn substitute_or<'r, F, X>(
         f: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
     let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
-        match *expr {
-            Expression::True => f(subs1, &TRUE),
-            Expression::False => {
+        match expr {
+            &Expression::True => f(subs1, &TRUE),
+            &Expression::False => {
                 let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
                 substitute_inner(subs1, b, variable, value, h)
             },
             _ => {
                 let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
-                    match *expr1 {
-                        Expression::True => f(subs2, &TRUE),
-                        Expression::False => f(subs2, expr),
+                    match expr1 {
+                        &Expression::True => f(subs2, &TRUE),
+                        &Expression::False => f(subs2, expr),
                         _ => {
-                            let e = Expression::Or(expr, expr1);
+                            let e = problem::or(expr, expr1);
                             f(subs2, &e)
                         }
                     }
@@ -103,11 +104,11 @@ fn substitute_inner<'r, F, X>(
         cb(subs1, expr1)
     };
 
-    match *expr {
-        Expression::True => f(subs, expr),
-        Expression::False => f(subs, expr),
-        Expression::Var(n) => {
-            if n == variable {
+    match expr {
+        &Expression::True => f(subs, expr),
+        &Expression::False => f(subs, expr),
+        &Expression::Var(ref n) => {
+            if *n == variable {
                 if value {
                     f(subs, &TRUE)
                 } else {
@@ -117,7 +118,7 @@ fn substitute_inner<'r, F, X>(
                 f(subs, expr)
             }
         },
-        Expression::Not(a) => {
+        &Expression::Not(ref a) => {
             let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
                 match *expr1 {
                     Expression::True => f(subs1, &FALSE),
@@ -130,8 +131,8 @@ fn substitute_inner<'r, F, X>(
             };
             substitute_inner(subs, a, variable, value, g)
         },
-        Expression::Or(a, b) => substitute_or(subs, a, b, variable, value, f),
-        Expression::And(a, b) => substitute_and(subs, a, b, variable, value, f)
+        &Expression::Or(ref a, ref b) => substitute_or(subs, a, b, variable, value, f),
+        &Expression::And(ref a, ref b) => substitute_and(subs, a, b, variable, value, f)
     }
 }
 
