@@ -18,6 +18,16 @@ fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
     }
 }
 
+fn substitute_end<'r, F, X>(
+        mut subs: Substitutions<'r>,
+        expr_ptr: *const (),
+        expr: &'r Expression<'r>,
+        cb: F) -> X
+    where F : for<'r1> FnOnce(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
+    subs.map.insert(expr_ptr, expr);
+    cb(subs, expr)
+}
+
 fn substitute_and<'r, F, X>(
         subs: Substitutions<'r>,
         a: &'r Expression<'r>,
@@ -26,15 +36,17 @@ fn substitute_and<'r, F, X>(
         value: bool,
         f: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
-    let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
+    substitute_inner(subs, a, variable, value, |subs1, expr| {
         match expr {
-            &Expression::False => f(subs1, &FALSE),
+            &Expression::False =>
+                f(subs1, &FALSE),
             &Expression::True => {
-                let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                substitute_inner(subs1, b, variable, value, h)
+                substitute_inner(subs1, b, variable, value, |subs2, expr1| {
+                    f(subs2, expr1)
+                })
             },
             _ => {
-                let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
+                substitute_inner(subs1, b, variable, value, |subs2, expr1| {
                     match expr1 {
                         &Expression::False => f(subs2, &FALSE),
                         &Expression::True => f(subs2, expr),
@@ -43,12 +55,10 @@ fn substitute_and<'r, F, X>(
                             f(subs2, &e)
                         }
                     }
-                };
-                substitute_inner(subs1, b, variable, value, h)
+                })
             }
         }
-    };
-    substitute_inner(subs, a, variable, value, g)
+    })
 }
 
 fn substitute_or<'r, F, X>(
@@ -59,15 +69,17 @@ fn substitute_or<'r, F, X>(
         value: bool,
         f: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
-    let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr| {
+    substitute_inner(subs, a, variable, value, |subs1, expr| {
         match expr {
-            &Expression::True => f(subs1, &TRUE),
+            &Expression::True =>
+                f(subs1, &TRUE),
             &Expression::False => {
-                let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| f(subs2, expr1);
-                substitute_inner(subs1, b, variable, value, h)
+                substitute_inner(subs1, b, variable, value, |subs2, expr1| {
+                    f(subs2, expr1)
+                })
             },
             _ => {
-                let h: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs2, expr1| {
+                substitute_inner(subs1, b, variable, value, |subs2, expr1| {
                     match expr1 {
                         &Expression::True => f(subs2, &TRUE),
                         &Expression::False => f(subs2, expr),
@@ -76,12 +88,29 @@ fn substitute_or<'r, F, X>(
                             f(subs2, &e)
                         }
                     }
-                };
-                substitute_inner(subs1, b, variable, value, h)
+                })
             }
         }
-    };
-    substitute_inner(subs, a, variable, value, g)
+    })
+}
+
+fn substitute_not<'r, F, X>(
+        subs: Substitutions<'r>,
+        expr: &'r Expression<'r>,
+        variable: u64,
+        value: bool,
+        f: F) -> X
+    where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
+    substitute_inner(subs, expr, variable, value, |subs1, expr1| {
+        match *expr1 {
+            Expression::True => f(subs1, &FALSE),
+            Expression::False => f(subs1, &TRUE),
+            _ => {
+                let e = Expression::Not(expr1);
+                f(subs1, &e)
+            }
+        }
+    })
 }
 
 fn substitute_inner<'r, F, X>(
@@ -103,40 +132,40 @@ fn substitute_inner<'r, F, X>(
         None => {}
     };
 
-    let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|mut subs1, expr1| {
-        subs1.map.insert(expr_ptr, expr1);
-        cb(subs1, expr1)
-    };
-
     match expr {
-        &Expression::True => f(subs, expr),
-        &Expression::False => f(subs, expr),
+        &Expression::True =>
+            substitute_end(subs, expr_ptr, expr, cb),
+        &Expression::False =>
+            substitute_end(subs, expr_ptr, expr, cb),
         &Expression::Var(ref n) => {
             if *n == variable {
                 if value {
-                    f(subs, &TRUE)
+                    substitute_end(subs, expr_ptr, &TRUE, cb)
                 } else {
-                    f(subs, &FALSE)
+                    substitute_end(subs, expr_ptr, &FALSE, cb)
                 }
             } else {
-                f(subs, expr)
+                substitute_end(subs, expr_ptr, expr, cb)
             }
         },
         &Expression::Not(ref a) => {
-            let g: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
-                match *expr1 {
-                    Expression::True => f(subs1, &FALSE),
-                    Expression::False => f(subs1, &TRUE),
-                    _ => {
-                        let e = Expression::Not(expr1);
-                        f(subs1, &e)
-                    }
-                }
+            let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
+                substitute_end(subs1, expr_ptr, expr1, &cb)
             };
-            substitute_inner(subs, a, variable, value, g)
+            substitute_not(subs, a, variable, value, f)
         },
-        &Expression::Or(_, ref a, ref b) => substitute_or(subs, a, b, variable, value, f),
-        &Expression::And(_, ref a, ref b) => substitute_and(subs, a, b, variable, value, f)
+        &Expression::Or(_, ref a, ref b) => {
+            let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
+                substitute_end(subs1, expr_ptr, expr1, &cb)
+            };
+            substitute_or(subs, a, b, variable, value, f)
+        },
+        &Expression::And(_, ref a, ref b) => {
+            let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|subs1, expr1| {
+                substitute_end(subs1, expr_ptr, expr1, &cb)
+            };
+            substitute_and(subs, a, b, variable, value, f)
+        }
     }
 }
 
@@ -147,6 +176,7 @@ pub fn substitute<'r, F, X>(
         cb: F) -> X
     where F : for<'r1> Fn(&'r1 Expression<'r1>) -> X {
     let subs = Substitutions {map: HashMap::new()};
-    let f: &for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X = &|_, expr1| cb(expr1);
-    substitute_inner(subs, expr, variable, value, f)
+    substitute_inner(subs, expr, variable, value, |_, expr1| {
+        cb(expr1)
+    })
 }
