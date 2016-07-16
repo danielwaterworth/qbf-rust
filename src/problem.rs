@@ -35,7 +35,7 @@ impl<'r> Expression<'r> {
     }
 
     fn with_variables<F, X>(&self, f: F) -> X
-        where F: for<'r1> Fn(&'r1 Vars) -> X {
+        where F: for<'r1> FnOnce(&'r1 Vars) -> X {
         match self {
             &Expression::And(ref v, _, _) => f(v),
             &Expression::Or(ref v, _, _) => f(v),
@@ -50,8 +50,7 @@ impl<'r> Expression<'r> {
     }
 
     fn variables(&self) -> Vars {
-        let f: &for<'r1> Fn(&'r1 Vars) -> Vars = &|v| v.clone();
-        self.with_variables(f)
+        self.with_variables(|v| v.clone())
     }
 }
 

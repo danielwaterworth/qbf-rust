@@ -91,7 +91,6 @@ fn substitute_inner<'r, F, X>(
         value: bool,
         cb: F) -> X
     where F : for<'r1> Fn(Substitutions<'r1>, &'r1 Expression<'r1>) -> X {
-
     if !expr.has_var(variable) {
         return cb(subs, expr);
     };
