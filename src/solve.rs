@@ -104,33 +104,34 @@ fn solve_inner<'r>(
             };
     };
 
-    if expr.has_var(start_at) {
-        match current_quantifier {
-            Quantifier::ForAll => {
-                match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
-                    Solution::Sat => {
-                        solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
-                    },
-                    Solution::Unsat => Solution::Unsat
-                }
-            },
-            Quantifier::Exists => {
-                match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
-                    Solution::Sat => Solution::Sat,
-                    Solution::Unsat => {
-                        solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
-                    }
+    if !expr.has_var(start_at) {
+        return
+            solve_inner(
+                current_quantifier,
+                current_block - 1,
+                blocks,
+                start_at + 1,
+                expr
+            );
+    }
+
+    match current_quantifier {
+        Quantifier::ForAll => {
+            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+                Solution::Sat => {
+                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
+                },
+                Solution::Unsat => Solution::Unsat
+            }
+        },
+        Quantifier::Exists => {
+            match solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, false) {
+                Solution::Sat => Solution::Sat,
+                Solution::Unsat => {
+                    solve_inner_with(current_quantifier, current_block, blocks, start_at, expr, true)
                 }
             }
         }
-    } else {
-        solve_inner(
-            current_quantifier,
-            current_block - 1,
-            blocks,
-            start_at + 1,
-            expr
-        )
     }
 }
 
