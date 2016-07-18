@@ -69,9 +69,10 @@ fn substitute_not<'r, X>(
         f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
     substitute_inner(subs, expr, variable, value, &mut |subs1, expr1| {
-        match *expr1 {
-            Expression::True => f(subs1, &FALSE),
-            Expression::False => f(subs1, &TRUE),
+        match expr1 {
+            &Expression::True => f(subs1, &FALSE),
+            &Expression::False => f(subs1, &TRUE),
+            &Expression::Not(ref e) => f(subs1, e),
             _ => {
                 let e = Expression::Not(expr1);
                 f(subs1, &e)
