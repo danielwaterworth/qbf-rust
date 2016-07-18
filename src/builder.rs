@@ -36,8 +36,15 @@ impl<'r> Builder<'r> {
         a: &'r QExp<'r>,
         f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
-        let e = problem::not(a);
-        f(self, &e)
+        match a {
+            &QExp::True => f(self, &problem::FALSE),
+            &QExp::False => f(self, &problem::TRUE),
+            &QExp::Not(ref e) => f(self, e),
+            _ => {
+                let e = problem::not(a);
+                f(self, &e)
+            }
+        }
     }
 
     pub fn and<X>(
@@ -46,8 +53,16 @@ impl<'r> Builder<'r> {
         b: &'r QExp<'r>,
         f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
-        let e = problem::and(a, b);
-        f(self, &e)
+        match (a, b) {
+            (&QExp::False, _) => f(self, &problem::FALSE),
+            (_, &QExp::False) => f(self, &problem::FALSE),
+            (&QExp::True, _) => f(self, b),
+            (_, &QExp::True) => f(self, a),
+            _ => {
+                let e = problem::and(a, b);
+                f(self, &e)
+            }
+        }
     }
 
     pub fn or<X>(
