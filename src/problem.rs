@@ -51,15 +51,41 @@ impl<'r> Expression<'r> {
     }
 }
 
-pub fn and<'r>(a: &'r Expression<'r>, b: &'r Expression<'r>) -> Expression<'r> {
-    let mut v_a = a.variables();
-    let mut v_b = b.variables();
-    v_a.union(&mut v_b);
-    Expression::And(v_a, a, b)
+pub fn and<'a, F, X>(
+        a: &'a Expression<'a>,
+        b: &'a Expression<'a>,
+        f: F) -> X
+    where F: for<'b> FnOnce(&'b Expression<'b>) -> X
+{
+    match (a, b) {
+        (&Expression::False, _) => f(&FALSE),
+        (_, &Expression::False) => f(&FALSE),
+        (&Expression::True, _) => f(b),
+        (_, &Expression::True) => f(a),
+        _ => {
+            let mut v_a = a.variables();
+            let mut v_b = b.variables();
+            v_a.union(&mut v_b);
+            let e = Expression::And(v_a, a, b);
+            f(&e)
+        }
+    }
 }
 
-pub fn not<'r>(a: &'r Expression<'r>) -> Expression<'r> {
-    Expression::Not(a)
+pub fn not<'r, F, X>(
+        a: &'r Expression<'r>,
+        f: F) -> X
+    where F: for<'b> FnOnce(&'b Expression<'b>) -> X
+{
+    match a {
+        &Expression::True => f(&FALSE),
+        &Expression::False => f(&TRUE),
+        &Expression::Not(ref e) => f(e),
+        _ => {
+            let e = Expression::Not(a);
+            f(&e)
+        }
+    }
 }
 
 pub static TRUE: Expression<'static> = Expression::True;

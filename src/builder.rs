@@ -52,19 +52,13 @@ impl<'r> Builder<'r> {
         a: &'r QExp<'r>,
         f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
-        match a {
-            &QExp::True => f(self, &problem::FALSE),
-            &QExp::False => f(self, &problem::TRUE),
-            &QExp::Not(ref e) => f(self, e),
-            _ => {
-                let expr_ptr = a as (*const _) as (*const ());
-                match self.nots.get(&expr_ptr).map(|v| v.clone()) {
-                    Some(e) => f(self, e),
-                    None => {
-                        let e = problem::not(a);
-                        self.insert_not(expr_ptr, &e, f)
-                    }
-                }
+        let expr_ptr = a as (*const _) as (*const ());
+        match self.nots.get(&expr_ptr).map(|v| v.clone()) {
+            Some(e) => f(self, e),
+            None => {
+                problem::not(a, |e| {
+                    self.insert_not(expr_ptr, &e, f)
+                })
             }
         }
     }
@@ -76,7 +70,7 @@ impl<'r> Builder<'r> {
             f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
         self.ands.insert(k, e);
-        f(self, &e)
+        f(self, e)
     }
 
     pub fn and<X>(
@@ -85,22 +79,18 @@ impl<'r> Builder<'r> {
         b: &'r QExp<'r>,
         f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
-        match (a, b) {
-            (&QExp::False, _) => f(self, &problem::FALSE),
-            (_, &QExp::False) => f(self, &problem::FALSE),
-            (&QExp::True, _) => f(self, b),
-            (_, &QExp::True) => f(self, a),
-            _ => {
-                let a_ptr = a as (*const _) as (*const ());
-                let b_ptr = b as (*const _) as (*const ());
-                let k = (min(a_ptr, b_ptr), max(a_ptr, b_ptr));
-                match self.ands.get(&k).map(|v| v.clone()) {
-                    Some(e) => f(self, e),
-                    None => {
-                        let e = problem::and(a, b);
-                        self.insert_and(k, &e, f)
-                    }
-                }
+        let a_ptr = a as (*const _) as (*const ());
+        let b_ptr = b as (*const _) as (*const ());
+        let k = (min(a_ptr, b_ptr), max(a_ptr, b_ptr));
+
+        match self.ands.get(&k).map(|v| v.clone()) {
+            Some(e) => {
+                f(self, e)
+            },
+            None => {
+                problem::and(a, b, move |e| {
+                    self.insert_and(k, e, f)
+                })
             }
         }
     }
