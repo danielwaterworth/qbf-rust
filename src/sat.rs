@@ -37,16 +37,6 @@ fn tseytin<'r>(
                 picosat::add_arg(pico, &[-c_v, b_v]);
                 c_v
             },
-            &Expression::Or(_, a, b) => {
-                let a_v = tseytin(subs, pico, a, start_at);
-                let b_v = tseytin(subs, pico, b, start_at);
-                let c_v = *start_at;
-                *start_at += 2;
-                picosat::add_arg(pico, &[-c_v, a_v, b_v]);
-                picosat::add_arg(pico, &[c_v, -a_v]);
-                picosat::add_arg(pico, &[c_v, -b_v]);
-                c_v
-            },
             &Expression::Not(a) => {
                 -tseytin(subs, pico, a, start_at)
             },

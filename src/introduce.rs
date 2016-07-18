@@ -86,8 +86,8 @@ fn with_statements<'r, S, F, X>(expressions: HashMap<String, Exp<'r>>, mut state
                         (_, &QExp::True) =>
                             with_statement(expressions, statements, statement.name, TRUE, f),
                         _ => {
-                            let e = problem::or(a1.e, b1.e);
-                            let e_ = problem::not(&e);
+                            let e_ = problem::and(&a1.e_, &b1.e_);
+                            let e = problem::not(&e_);
                             let e1 = Exp { e: &e, e_: &e_ };
                             with_statement(expressions, statements, statement.name, e1, f)
                         }

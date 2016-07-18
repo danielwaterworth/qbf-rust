@@ -61,39 +61,6 @@ fn substitute_and<'r, X>(
     })
 }
 
-fn substitute_or<'r, X>(
-        subs: Substitutions<'r>,
-        a: &'r Expression<'r>,
-        b: &'r Expression<'r>,
-        variable: u64,
-        value: bool,
-        f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
-    ) -> X {
-    substitute_inner(subs, a, variable, value, &mut |subs1, expr| {
-        match expr {
-            &Expression::True =>
-                f(subs1, &TRUE),
-            &Expression::False => {
-                substitute_inner(subs1, b, variable, value, &mut |subs2, expr1| {
-                    f(subs2, expr1)
-                })
-            },
-            _ => {
-                substitute_inner(subs1, b, variable, value, &mut |subs2, expr1| {
-                    match expr1 {
-                        &Expression::True => f(subs2, &TRUE),
-                        &Expression::False => f(subs2, expr),
-                        _ => {
-                            let e = problem::or(expr, expr1);
-                            f(subs2, &e)
-                        }
-                    }
-                })
-            }
-        }
-    })
-}
-
 fn substitute_not<'r, X>(
         subs: Substitutions<'r>,
         expr: &'r Expression<'r>,
@@ -150,11 +117,6 @@ fn substitute_inner<'r, X>(
         },
         &Expression::Not(ref a) => {
             substitute_not(subs, a, variable, value, &mut |subs1, expr1| {
-                substitute_end(subs1, expr_ptr, expr1, cb)
-            })
-        },
-        &Expression::Or(_, ref a, ref b) => {
-            substitute_or(subs, a, b, variable, value, &mut |subs1, expr1| {
                 substitute_end(subs1, expr_ptr, expr1, cb)
             })
         },
