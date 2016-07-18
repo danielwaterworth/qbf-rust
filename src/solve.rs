@@ -1,6 +1,3 @@
-use sat::SATSolver;
-
-use problem;
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;

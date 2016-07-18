@@ -30,5 +30,5 @@ fn main() {
         };
 
         introduce::with_parsed_problem(parsed, f)
-    }).unwrap().join();
+    }).unwrap().join().unwrap();
 }

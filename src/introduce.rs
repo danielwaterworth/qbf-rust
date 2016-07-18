@@ -24,7 +24,7 @@ fn lookup_literal<'r, X>(
 
 fn with_statements<'r, X>(
         mut builder: Builder<'r>,
-        mut statements: &[Statement],
+        statements: &[Statement],
         f: &mut (for<'r1> FnMut(Builder<'r1>) -> X + 'r)) -> X
 {
     if statements.len() == 0 {
@@ -82,7 +82,7 @@ fn with_statements<'r, X>(
     }
 }
 
-pub fn with_parsed_problem<F, X>(mut parsed: parser::Problem, mut f: F) -> X
+pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     where F : for<'r> FnMut(problem::QBF<'r>) -> X
 {
     let mut quantifiers = parsed.quantifiers;
@@ -96,7 +96,7 @@ pub fn with_parsed_problem<F, X>(mut parsed: parser::Problem, mut f: F) -> X
 
     let builder = Builder::new(ref_variables);
     with_statements(builder, statements.as_slice(), &mut |builder1| {
-        lookup_literal(builder1, &output, &mut |builder2, e| {
+        lookup_literal(builder1, &output, &mut |_, e| {
             f(problem::QBF {
                 quantifiers: quantifiers1.as_slice(),
                 expr: e
