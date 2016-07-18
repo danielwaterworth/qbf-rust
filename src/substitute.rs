@@ -34,7 +34,7 @@ fn substitute_and<'r, X>(
         b: &'r Expression<'r>,
         variable: u64,
         value: bool,
-        mut f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
+        f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
     substitute_inner(subs, a, variable, value, &mut |subs1, expr| {
         match expr {
@@ -67,7 +67,7 @@ fn substitute_or<'r, X>(
         b: &'r Expression<'r>,
         variable: u64,
         value: bool,
-        mut f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
+        f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
     substitute_inner(subs, a, variable, value, &mut |subs1, expr| {
         match expr {
@@ -99,7 +99,7 @@ fn substitute_not<'r, X>(
         expr: &'r Expression<'r>,
         variable: u64,
         value: bool,
-        mut f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
+        f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
     substitute_inner(subs, expr, variable, value, &mut |subs1, expr1| {
         match *expr1 {
