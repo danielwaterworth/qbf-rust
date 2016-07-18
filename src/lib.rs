@@ -4,6 +4,7 @@ extern crate bit_vec;
 extern crate picorust;
 
 pub mod builder;
+pub mod expansion;
 pub mod introduce;
 pub mod parser;
 pub mod problem;

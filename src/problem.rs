@@ -88,6 +88,21 @@ pub fn not<'r, F, X>(
     }
 }
 
+pub fn or<'a, F, X>(
+        a: &'a Expression<'a>,
+        b: &'a Expression<'a>,
+        f: F) -> X
+    where F: for<'b> FnOnce(&'b Expression<'b>) -> X
+{
+    not(a, |a_| {
+        not(b, |b_| {
+            and(a_, b_, |e| {
+                not(e, f)
+            })
+        })
+    })
+}
+
 pub static TRUE: Expression<'static> = Expression::True;
 pub static FALSE: Expression<'static> = Expression::False;
 

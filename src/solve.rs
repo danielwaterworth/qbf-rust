@@ -1,9 +1,11 @@
+use problem;
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
 use problem::opposite_quantifier;
 
 use substitute::substitute;
+use expansion::expansion_is_cheap;
 
 #[derive(Debug)]
 pub enum Solution {
