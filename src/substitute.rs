@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::hash::Hash;
 
 use problem;
 use problem::Expression;
@@ -8,14 +7,6 @@ use problem::FALSE;
 
 struct Substitutions<'r> {
     map: HashMap<*const (), &'r Expression<'r>>
-}
-
-fn get_clone<K, V>(m: &HashMap<K, V>, k: &K) -> Option<V>
-    where K: Eq, K: Hash, V:Clone {
-    match m.get(k) {
-        Some(v) => Some(v.clone()),
-        None => None
-    }
 }
 
 fn substitute_end<'r, X>(
@@ -93,7 +84,7 @@ fn substitute_inner<'r, X>(
     };
 
     let expr_ptr = (expr as *const _) as *const ();
-    match get_clone(&subs.map, &expr_ptr) {
+    match subs.map.get(&expr_ptr).map(|v| v.clone()) {
         Some(expr1) => {
             return cb(subs, expr1);
         },
