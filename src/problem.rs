@@ -22,6 +22,19 @@ pub enum Expression<'r> {
     False
 }
 
+impl<'r> PartialEq for Expression<'r> {
+    fn eq(&self, other: &Expression<'r>) -> bool {
+        match (self, other) {
+            (&Expression::True, &Expression::True) => true,
+            (&Expression::False, &Expression::False) => true,
+            (&Expression::Var(n), &Expression::Var(m)) => n == m,
+            (&Expression::Not(a), &Expression::Not(b)) => a == b,
+            (&Expression::And(_, a, b), &Expression::And(_, p, q)) => a == p && b == q,
+            (_, _) => false
+        }
+    }
+}
+
 impl<'r> Expression<'r> {
     pub fn has_var(&self, var: u64) -> bool {
         match self {

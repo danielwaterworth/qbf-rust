@@ -16,4 +16,5 @@ pub mod vars;
 #[cfg(test)]
 mod tests {
     mod introduce;
+    mod problem;
 }

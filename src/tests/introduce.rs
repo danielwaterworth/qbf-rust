@@ -22,14 +22,12 @@ fn false_becomes_false() {
         output: pos("x")
     };
 
-    let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
+    with_parsed_problem(p, |qbf| {
         match *qbf.expr {
             QExp::False => (),
             _ => panic!("bad")
         }
-    };
-
-    with_parsed_problem(p, f);
+    });
 }
 
 #[test]
@@ -40,32 +38,12 @@ fn true_becomes_true() {
         output: pos("x")
     };
 
-    let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
+    with_parsed_problem(p, |qbf| {
         match *qbf.expr {
             QExp::True => (),
             _ => panic!("bad")
         }
-    };
-
-    with_parsed_problem(p, f);
-}
-
-#[test]
-fn or_becomes_or() {
-    let p = parser::Problem {
-        quantifiers: vec![(Quantifier::ForAll, "x".to_string())],
-        statements: vec![st("y", PExp::Or(pos("x"), pos("x")))],
-        output: pos("y")
-    };
-
-    let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
-        match *qbf.expr {
-            QExp::Or(&QExp::Var(0), &QExp::Var(0)) => (),
-            _ => panic!("bad")
-        }
-    };
-
-    with_parsed_problem(p, f);
+    });
 }
 
 #[test]
@@ -76,14 +54,12 @@ fn and_becomes_and() {
         output: pos("y")
     };
 
-    let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
+    with_parsed_problem(p, |qbf| {
         match *qbf.expr {
-            QExp::And(&QExp::Var(0), &QExp::Var(0)) => (),
+            QExp::And(_, &QExp::Var(0), &QExp::Var(0)) => (),
             _ => panic!("bad")
         }
-    };
-
-    with_parsed_problem(p, f);
+    });
 }
 
 #[test]
@@ -94,12 +70,10 @@ fn not_becomes_not() {
         output: pos("y")
     };
 
-    let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
+    with_parsed_problem(p, |qbf| {
         match *qbf.expr {
             QExp::Not(&QExp::Var(0)) => (),
             _ => panic!("bad")
         }
-    };
-
-    with_parsed_problem(p, f);
+    });
 }
