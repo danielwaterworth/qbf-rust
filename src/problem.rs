@@ -121,6 +121,13 @@ pub static FALSE: Expression<'static> = Expression::False;
 
 #[derive(Debug)]
 pub struct QBF<'r> {
-    pub quantifiers: &'r [Quantifier],
+    pub first_quantifier: Quantifier,
+    pub quantifier_blocks: &'r [u64],
     pub expr: &'r Expression<'r>
+}
+
+#[derive(Debug)]
+pub enum Solution {
+    Sat,
+    Unsat
 }

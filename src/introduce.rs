@@ -8,6 +8,7 @@ use parser::Statement;
 use parser::Expression as PExp;
 
 use problem::Expression as QExp;
+use problem::Quantifier;
 
 fn lookup_literal<'r, X>(
         builder: Builder<'r>,
@@ -82,6 +83,27 @@ fn with_statements<'r, X>(
     }
 }
 
+fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u64>) {
+    let first_quantifier = quantifiers[0].clone();
+    let mut output = vec![];
+
+    let mut current_quantifier = first_quantifier.clone();
+    let mut n = 1;
+
+    for quantifier in &quantifiers[1..] {
+        if quantifier.clone() == current_quantifier {
+            n += 1;
+        } else {
+            output.push(n);
+            n = 1;
+            current_quantifier = quantifier.clone();
+        }
+    }
+    output.push(n);
+
+    return (first_quantifier, output);
+}
+
 pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     where F : for<'r> FnMut(problem::QBF<'r>) -> X
 {
@@ -97,8 +119,12 @@ pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     let builder = Builder::new(ref_variables);
     with_statements(builder, statements.as_slice(), &mut |builder1| {
         lookup_literal(builder1, &output, &mut |_, e| {
+            let (first_quantifier, blocks) =
+                quantifier_blocks(&quantifiers1.as_slice());
+
             f(problem::QBF {
-                quantifiers: quantifiers1.as_slice(),
+                first_quantifier: first_quantifier,
+                quantifier_blocks: blocks.as_slice(),
                 expr: e
             })
         })

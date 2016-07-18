@@ -56,7 +56,7 @@ fn substitute_not<'r, X>(
     ) -> X {
     substitute_inner(subs, expr, variable, value, &mut |subs1, expr1| {
         problem::not(expr1, |e| {
-            f(subs1, &e)
+            f(subs1, e)
         })
     })
 }

@@ -1,38 +1,10 @@
-use problem;
 use problem::Quantifier;
 use problem::Expression;
 use problem::QBF;
+use problem::Solution;
 use problem::opposite_quantifier;
 
 use substitute::substitute;
-use expansion::expansion_is_cheap;
-
-#[derive(Debug)]
-pub enum Solution {
-    Sat,
-    Unsat
-}
-
-fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u64>) {
-    let first_quantifier = quantifiers[0].clone();
-    let mut output = vec![];
-
-    let mut current_quantifier = first_quantifier.clone();
-    let mut n = 1;
-
-    for quantifier in &quantifiers[1..] {
-        if quantifier.clone() == current_quantifier {
-            n += 1;
-        } else {
-            output.push(n);
-            n = 1;
-            current_quantifier = quantifier.clone();
-        }
-    }
-    output.push(n);
-
-    return (first_quantifier, output);
-}
 
 fn solve_inner<'r>(
             mut current_quantifier: Quantifier,
@@ -101,6 +73,11 @@ fn solve_inner<'r>(
 }
 
 pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
-    let (first_quantifier, blocks) = quantifier_blocks(&problem.quantifiers);
-    solve_inner(first_quantifier, blocks[0], &blocks[1..], 0, problem.expr)
+    solve_inner(
+        problem.first_quantifier,
+        problem.quantifier_blocks[0],
+        &problem.quantifier_blocks[1..],
+        0,
+        problem.expr
+    )
 }

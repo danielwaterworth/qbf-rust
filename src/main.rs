@@ -7,7 +7,7 @@ use qbf::introduce;
 use std::fs::File;
 use std::io::Read;
 
-use qbf::solve::Solution;
+use qbf::problem::Solution;
 use qbf::solve::solve;
 
 fn main() {
