@@ -12,7 +12,7 @@ struct ExpPrinter {
 impl ExpPrinter {
     fn new() -> ExpPrinter {
         ExpPrinter {
-            output: "digraph g {".to_string(),
+            output: "digraph g {\n".to_string(),
             serialized: HashMap::new(),
             next_var: 1
         }
