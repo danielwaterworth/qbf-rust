@@ -96,6 +96,29 @@ fn same_thing<X>(a: &X, b: &X) -> bool {
     (a as *const _) == (b as *const _)
 }
 
+fn implied<'a>(exp: &'a Expression<'a>) -> (HashSet<*const ()>, HashSet<*const ()>) {
+    let mut trues = HashSet::new();
+    let mut falses = HashSet::new();
+    let mut to_visit = vec![exp];
+
+    while let Some(x) = to_visit.pop() {
+        let expr_ptr = x as *const _ as *const ();
+        trues.insert(expr_ptr);
+        match x {
+            &Expression::And(_, p, q) => {
+                to_visit.push(p);
+                to_visit.push(q);
+            },
+            &Expression::Not(u) => {
+                falses.insert(u as *const _ as *const ());
+            },
+            _ => {}
+        }
+    }
+
+    (trues, falses)
+}
+
 pub fn and<'a, F, X>(
         a: &'a Expression<'a>,
         b: &'a Expression<'a>,
@@ -110,11 +133,19 @@ pub fn and<'a, F, X>(
         (&Expression::And(_, p, q), _) if same_thing(p, b) || same_thing(q, b) => f(a),
         (_, &Expression::And(_, p, q)) if same_thing(p, a) || same_thing(q, a) => f(b),
         _ => {
-            let mut v_a = a.variables();
-            let mut v_b = b.variables();
-            v_a.union(&mut v_b);
-            let e = Expression::And(v_a, a, b);
-            f(&e)
+            let (a_implied_true, a_implied_false) = implied(&a);
+            let (b_implied_true, b_implied_false) = implied(&b);
+
+            if a_implied_true.intersection(&b_implied_false).next().is_some() ||
+               a_implied_false.intersection(&b_implied_true).next().is_some() {
+                f(&FALSE)
+            } else {
+                let mut v_a = a.variables();
+                let mut v_b = b.variables();
+                v_a.union(&mut v_b);
+                let e = Expression::And(v_a, a, b);
+                f(&e)
+            }
         }
     }
 }
