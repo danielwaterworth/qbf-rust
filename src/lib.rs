@@ -8,6 +8,7 @@ pub mod expand_solve;
 pub mod expansion;
 pub mod introduce;
 pub mod parser;
+pub mod printout;
 pub mod problem;
 pub mod rc_expression;
 pub mod sat;
