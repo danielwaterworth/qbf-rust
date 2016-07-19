@@ -83,9 +83,9 @@ fn with_statements<'r, X>(
     }
 }
 
-fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u32>) {
+fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Quantifier, Vec<u32>) {
     if quantifiers.len() == 0 {
-        (Quantifier::Exists, vec![])
+        (Quantifier::Exists, Quantifier::Exists, vec![])
     } else {
         let first_quantifier = quantifiers[0].clone();
         let mut output = vec![];
@@ -97,14 +97,14 @@ fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u32>) {
             if quantifier.clone() == current_quantifier {
                 n += 1;
             } else {
+                current_quantifier = quantifier.clone();
                 output.push(n);
                 n = 1;
-                current_quantifier = quantifier.clone();
             }
         }
         output.push(n);
 
-        (first_quantifier, output)
+        (first_quantifier, current_quantifier, output)
     }
 }
 
@@ -123,11 +123,12 @@ pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     let builder = Builder::new(ref_variables);
     with_statements(builder, statements.as_slice(), &mut |builder1| {
         lookup_literal(builder1, &output, &mut |_, e| {
-            let (first_quantifier, blocks) =
+            let (first_quantifier, last_quantifier, blocks) =
                 quantifier_blocks(&quantifiers1.as_slice());
 
             f(problem::QBF {
                 first_quantifier: first_quantifier,
+                last_quantifier: last_quantifier,
                 quantifier_blocks: blocks.as_slice(),
                 expr: e
             })

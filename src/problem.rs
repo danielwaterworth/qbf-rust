@@ -150,6 +150,7 @@ pub static FALSE: Expression<'static> = Expression::False;
 #[derive(Debug)]
 pub struct QBF<'r> {
     pub first_quantifier: Quantifier,
+    pub last_quantifier: Quantifier,
     pub quantifier_blocks: &'r [u32],
     pub expr: &'r Expression<'r>
 }

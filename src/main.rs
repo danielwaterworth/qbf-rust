@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Read;
 
 use qbf::problem::Solution;
-use qbf::solve::solve;
+use qbf::expand_solve::solve;
 
 fn main() {
     std::thread::Builder::new().stack_size(8*1024*1024*1024).spawn(|| {

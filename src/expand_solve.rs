@@ -1,72 +1,68 @@
+use std::rc::Rc;
+
 use problem;
-use problem::Quantifier;
-use problem::Expression;
 use problem::QBF;
+use problem::Quantifier;
 use problem::Solution;
 use problem::opposite_quantifier;
 
-use simplify::simplify;
+use rc_expression::Expression as RExp;
+use rc_expression::construct;
+use rc_expression::with;
 
 use substitute::substitute;
 
-fn expand_inner<'a, X>(
-            expr: &'a Expression<'a>,
-            mut current_quantifier: Quantifier,
-            mut current_block: u32,
-            mut blocks: &[u32],
-            start_at: u32,
-            mut f: &mut (for<'b> FnMut(&'b Expression<'b>) -> X + 'a)
-        ) -> X {
-    if current_block == 0 {
-        if blocks.len() == 0 {
-            return f(expr)
-        } else {
-            current_quantifier = opposite_quantifier(current_quantifier);
-            current_block = blocks[0];
-            blocks = &blocks[1..];
-        }
-    };
+use solve::solve as enumeration_solve;
 
-    expand_inner(
-        expr,
-        current_quantifier,
-        current_block - 1,
-        blocks,
-        start_at + 1,
-        &mut |expr1| {
-            substitute(expr1, start_at, false, |false_expr| {
-                substitute(expr1, start_at, true, |true_expr| {
-                    match current_quantifier {
-                        Quantifier::ForAll => {
-                            problem::and(&true_expr, &false_expr, |expr2| {
-                                simplify(expr2, &mut f)
-                            })
-                        },
-                        Quantifier::Exists => {
-                            problem::or(&true_expr, &false_expr, |expr2| {
-                                simplify(expr2, &mut f)
-                            })
-                        }
+fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> (Rc<RExp>, usize) {
+    with(exp, &mut |exp1| {
+        substitute(exp1, var, false, |false_expr| {
+            substitute(exp1, var, true, |true_expr| {
+                match quantifier {
+                    Quantifier::ForAll => {
+                        problem::and(false_expr, true_expr, |expr| {
+                            (construct(expr), expr.size())
+                        })
+                    },
+                    Quantifier::Exists => {
+                        problem::or(false_expr, true_expr, |expr| {
+                            (construct(expr), expr.size())
+                        })
                     }
-                })
+                }
             })
-        }
-    )
+        })
+    })
 }
 
 pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
-    expand_inner(
-        problem.expr,
-        problem.first_quantifier,
-        problem.quantifier_blocks[0],
-        &problem.quantifier_blocks[1..],
-        0,
-        &mut |expr| {
-            match expr {
-                &Expression::True => Solution::Sat,
-                &Expression::False => Solution::Unsat,
-                _ => panic!("free variable")
+    let n_variables: u32 = problem.quantifier_blocks.iter().sum();
+    let mut expr = construct(problem.expr);
+
+    let mut current_quantifier = problem.last_quantifier;
+    let mut var = n_variables - 1;
+    for block in problem.quantifier_blocks.iter().rev() {
+        for _ in 0..block.clone() {
+            let (expr1, sz) = expand(current_quantifier, var, expr);
+            expr = expr1;
+
+            if sz > 2000 {
+                break;
             }
+
+            var -= 1;
         }
-    )
+        current_quantifier = opposite_quantifier(current_quantifier);
+    }
+
+    with(expr, &mut |expr1| {
+        enumeration_solve(
+            &QBF {
+                first_quantifier: problem.first_quantifier.clone(),
+                last_quantifier: problem.last_quantifier.clone(),
+                quantifier_blocks: problem.quantifier_blocks,
+                expr: expr1
+            }
+        )
+    })
 }
