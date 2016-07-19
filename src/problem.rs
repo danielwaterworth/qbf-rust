@@ -92,6 +92,10 @@ impl<'r> Expression<'r> {
     }
 }
 
+fn same_thing<X>(a: &X, b: &X) -> bool {
+    (a as *const _) == (b as *const _)
+}
+
 pub fn and<'a, F, X>(
         a: &'a Expression<'a>,
         b: &'a Expression<'a>,
@@ -103,6 +107,8 @@ pub fn and<'a, F, X>(
         (_, &Expression::False) => f(&FALSE),
         (&Expression::True, _) => f(b),
         (_, &Expression::True) => f(a),
+        (&Expression::And(_, p, q), _) if same_thing(p, b) || same_thing(q, b) => f(a),
+        (_, &Expression::And(_, p, q)) if same_thing(p, a) || same_thing(q, a) => f(b),
         _ => {
             let mut v_a = a.variables();
             let mut v_b = b.variables();
