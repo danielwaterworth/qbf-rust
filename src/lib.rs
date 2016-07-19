@@ -9,6 +9,7 @@ pub mod expansion;
 pub mod introduce;
 pub mod parser;
 pub mod problem;
+pub mod rc_expression;
 pub mod sat;
 pub mod simplify;
 pub mod solve;
