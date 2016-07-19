@@ -80,6 +80,9 @@ impl<'r> Expression<'r> {
                         to_visit.push(a);
                         to_visit.push(b);
                     },
+                    &Expression::Not(ref a) => {
+                        to_visit.push(a);
+                    }
                     _ => {}
                 }
             }
