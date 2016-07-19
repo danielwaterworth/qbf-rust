@@ -49,7 +49,7 @@ fn tseytin<'r>(
             &Expression::Var(n) => {
                 let n1 = (n + 1) * 2;
                 assert!(n1 % 2 == 0);
-                assert!((n1 as i32) as u64 == n1);
+                assert!((n1 as i32) as u32 == n1);
                 n1 as i32
             }
         };
@@ -79,11 +79,11 @@ impl SATSolver {
         }
     }
 
-    pub fn set_var(&mut self, variable: u64, value: bool) {
+    pub fn set_var(&mut self, variable: u32, value: bool) {
         let n1 = (variable + 1) * 2;
         assert!(n1 % 2 == 0);
         let n2 = n1 as i32;
-        assert!(n2 as u64 == n1);
+        assert!(n2 as u32 == n1);
 
         picosat::push(&mut self.pico);
         if value {

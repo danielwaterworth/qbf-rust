@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use problem::Expression as QExp;
 
-pub fn expansion_is_cheap<'a>(exp: &'a QExp<'a>, variable: u64, max_cost: u32) -> bool {
+pub fn expansion_is_cheap<'a>(exp: &'a QExp<'a>, variable: u32, max_cost: u32) -> bool {
     let mut rebuilds = HashSet::new();
     let mut cost = 0;
 

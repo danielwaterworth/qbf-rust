@@ -23,7 +23,7 @@ fn substitute_and<'r, X>(
         subs: Substitutions<'r>,
         a: &'r Expression<'r>,
         b: &'r Expression<'r>,
-        variable: u64,
+        variable: u32,
         value: bool,
         f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
@@ -50,7 +50,7 @@ fn substitute_and<'r, X>(
 fn substitute_not<'r, X>(
         subs: Substitutions<'r>,
         expr: &'r Expression<'r>,
-        variable: u64,
+        variable: u32,
         value: bool,
         f: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
@@ -64,7 +64,7 @@ fn substitute_not<'r, X>(
 fn substitute_inner<'r, X>(
         subs: Substitutions<'r>,
         expr: &'r Expression<'r>,
-        variable: u64,
+        variable: u32,
         value: bool,
         mut cb: &mut (for<'r1> FnMut(Substitutions<'r1>, &'r1 Expression<'r1>) -> X + 'r)
     ) -> X {
@@ -111,7 +111,7 @@ fn substitute_inner<'r, X>(
 
 pub fn substitute<'r, F, X>(
         expr: &'r Expression<'r>,
-        variable: u64,
+        variable: u32,
         value: bool,
         mut cb: F) -> X
     where F : for<'r1> FnMut(&'r1 Expression<'r1>) -> X {

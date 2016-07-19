@@ -83,7 +83,7 @@ fn with_statements<'r, X>(
     }
 }
 
-fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u64>) {
+fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u32>) {
     let first_quantifier = quantifiers[0].clone();
     let mut output = vec![];
 
@@ -112,7 +112,7 @@ pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     let output = parsed.output;
 
     let (quantifiers1, mut names) : (Vec<_>, Vec<_>) = quantifiers.drain(..).unzip();
-    let variable_expressions: Vec<_> = (0..(quantifiers1.len() as u64)).map(QExp::Var).collect();
+    let variable_expressions: Vec<_> = (0..(quantifiers1.len() as u32)).map(QExp::Var).collect();
     let variables: HashMap<_, _> = names.drain(..).zip(variable_expressions).collect();
     let ref_variables = variables.iter().map(|(k, v)| (k.clone(), v)).collect();
 

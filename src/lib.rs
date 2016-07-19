@@ -10,6 +10,7 @@ pub mod introduce;
 pub mod parser;
 pub mod problem;
 pub mod sat;
+pub mod simplify;
 pub mod solve;
 pub mod substitute;
 pub mod vars;

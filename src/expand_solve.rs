@@ -5,14 +5,16 @@ use problem::QBF;
 use problem::Solution;
 use problem::opposite_quantifier;
 
+use simplify::simplify;
+
 use substitute::substitute;
 
 fn expand_inner<'a, X>(
             expr: &'a Expression<'a>,
             mut current_quantifier: Quantifier,
-            mut current_block: u64,
-            mut blocks: &[u64],
-            start_at: u64,
+            mut current_block: u32,
+            mut blocks: &[u32],
+            start_at: u32,
             mut f: &mut (for<'b> FnMut(&'b Expression<'b>) -> X + 'a)
         ) -> X {
     if current_block == 0 {
@@ -36,10 +38,14 @@ fn expand_inner<'a, X>(
                 substitute(expr1, start_at, true, |true_expr| {
                     match current_quantifier {
                         Quantifier::ForAll => {
-                            problem::and(&true_expr, &false_expr, &mut f)
+                            problem::and(&true_expr, &false_expr, |expr2| {
+                                simplify(expr2, &mut f)
+                            })
                         },
                         Quantifier::Exists => {
-                            problem::or(&true_expr, &false_expr, &mut f)
+                            problem::or(&true_expr, &false_expr, |expr2| {
+                                simplify(expr2, &mut f)
+                            })
                         }
                     }
                 })

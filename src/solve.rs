@@ -8,9 +8,9 @@ use substitute::substitute;
 
 fn solve_inner<'r>(
             mut current_quantifier: Quantifier,
-            mut current_block: u64,
-            mut blocks: &[u64],
-            start_at: u64,
+            mut current_block: u32,
+            mut blocks: &[u32],
+            start_at: u32,
             expr: &'r Expression<'r>
         ) -> Solution {
     match expr {

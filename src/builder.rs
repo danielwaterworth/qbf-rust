@@ -30,7 +30,7 @@ impl<'r> Builder<'r> {
 
     pub fn var<X>(
         self,
-        v: u64,
+        v: u32,
         f: &mut (for<'r1> FnMut(Builder<'r1>, &'r1 QExp<'r1>) -> X + 'r)) -> X
     {
         let e = QExp::Var(v);

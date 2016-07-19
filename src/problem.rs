@@ -19,7 +19,7 @@ pub fn opposite_quantifier(q: Quantifier) -> Quantifier {
 pub enum Expression<'r> {
     And(Vars, &'r Expression<'r>, &'r Expression<'r>),
     Not(&'r Expression<'r>),
-    Var(u64),
+    Var(u32),
     True,
     False
 }
@@ -38,7 +38,7 @@ impl<'r> PartialEq for Expression<'r> {
 }
 
 impl<'r> Expression<'r> {
-    pub fn has_var(&self, var: u64) -> bool {
+    pub fn has_var(&self, var: u32) -> bool {
         match self {
             &Expression::And(ref v, _, _) => v.get(var),
             &Expression::Not(ref v) => v.has_var(var),
@@ -47,7 +47,7 @@ impl<'r> Expression<'r> {
         }
     }
 
-    fn with_variables<F, X>(&self, f: F) -> X
+    pub fn with_variables<F, X>(&self, f: F) -> X
         where F: for<'r1> FnOnce(&'r1 Vars) -> X {
         match self {
             &Expression::And(ref v, _, _) => f(v),
@@ -147,7 +147,7 @@ pub static FALSE: Expression<'static> = Expression::False;
 #[derive(Debug)]
 pub struct QBF<'r> {
     pub first_quantifier: Quantifier,
-    pub quantifier_blocks: &'r [u64],
+    pub quantifier_blocks: &'r [u32],
     pub expr: &'r Expression<'r>
 }
 

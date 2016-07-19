@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use bit_vec::BitVec;
 
 #[derive(Debug, Clone)]
@@ -23,12 +25,16 @@ impl Vars {
         self.vars.union(&b.vars);
     }
 
-    pub fn add(&mut self, i: u64) {
+    pub fn add(&mut self, i: u32) {
         self.grow_to((i + 1) as usize);
         self.vars.set(i as usize, true);
     }
 
-    pub fn get(&self, i: u64) -> bool {
+    pub fn get(&self, i: u32) -> bool {
         self.vars.get(i as usize).unwrap_or(false)
+    }
+
+    pub fn len(&self) -> u32 {
+        self.vars.len() as u32
     }
 }
