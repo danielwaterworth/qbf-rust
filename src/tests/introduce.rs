@@ -23,8 +23,8 @@ fn false_becomes_false() {
     };
 
     with_parsed_problem(p, |qbf| {
-        match *qbf.expr {
-            QExp::False => (),
+        match qbf.expr {
+            &QExp::False => (),
             _ => panic!("bad")
         }
     });

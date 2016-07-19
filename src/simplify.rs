@@ -1,6 +1,9 @@
 use problem;
 use problem::Expression as QExp;
 
+use rc_expression::construct;
+use rc_expression::with;
+
 use substitute::substitute;
 
 fn transform<'a, F, X>(
@@ -24,44 +27,32 @@ fn transform<'a, F, X>(
     })
 }
 
-fn simplify_once<'a, F, X>(
-        var: u32,
-        expr: &'a QExp<'a>,
-        f: &mut F) -> X
-    where F : for<'b> FnMut(&'b QExp<'b>) -> X
-{
-    let outcome =
-        transform(var, expr, &mut |expr1| {
-            if expr1.size() < expr.size() {
-                Some(f(expr1))
-            } else {
-                None
-            }
-        });
-
-    match outcome {
-        Some(x) => x,
-        None => f(expr)
-    }
-}
-
-pub fn simplify_inner<'a, X>(
-        start_at: u32,
-        expr: &'a QExp<'a>,
-        f: &mut (for<'b> FnMut(&'b QExp<'b>) -> X + 'a)) -> X {
-    if start_at < expr.with_variables(|vars| vars.len()) {
-        simplify_once(start_at, expr, &mut |expr1| {
-            simplify_inner(start_at + 1, expr1, f)
-        })
-    } else {
-        f(expr)
-    }
-}
-
 pub fn simplify<'a, F, X>(
         expr: &'a QExp<'a>,
         f: &mut F) -> X
     where F : for<'b> FnMut(&'b QExp<'b>) -> X
 {
-    simplify_inner(0, expr, f)
+    let mut expr1 = construct(expr);
+
+    for var in 0..expr.with_variables(|v| v.len()) {
+        let expr2 =
+            with(expr1.clone(), &mut |expr2| {
+                transform(var, expr2, &mut |expr3| {
+                    if expr3.size() < expr2.size() {
+                        Some(construct(expr3))
+                    } else {
+                        None
+                    }
+                })
+            });
+
+        match expr2 {
+            Some(expr3) => {
+                expr1 = expr3;
+            },
+            None => {}
+        }
+    }
+
+    with(expr1, f)
 }

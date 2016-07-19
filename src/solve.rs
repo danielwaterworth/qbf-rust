@@ -4,6 +4,8 @@ use problem::QBF;
 use problem::Solution;
 use problem::opposite_quantifier;
 
+use simplify::simplify;
+
 use substitute::substitute;
 
 fn solve_inner<'r>(
@@ -73,11 +75,13 @@ fn solve_inner<'r>(
 }
 
 pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
-    solve_inner(
-        problem.first_quantifier,
-        problem.quantifier_blocks[0],
-        &problem.quantifier_blocks[1..],
-        0,
-        problem.expr
-    )
+    simplify(problem.expr, &mut |expr| {
+        solve_inner(
+            problem.first_quantifier,
+            problem.quantifier_blocks[0],
+            &problem.quantifier_blocks[1..],
+            0,
+            expr
+        )
+    })
 }

@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 use bit_vec::BitVec;
 
 #[derive(Debug, Clone)]

@@ -13,7 +13,7 @@ pub enum Expression {
     False
 }
 
-pub fn construct<'a>(
+fn construct_inner<'a>(
         replacements: &mut HashMap<*const (), Rc<Expression>>,
         exp: &'a QExp<'a>) -> Rc<Expression>
 {
@@ -24,12 +24,12 @@ pub fn construct<'a>(
             let outcome =
                 match exp {
                     &QExp::And(_, a, b) => {
-                        let a1 = construct(replacements, a);
-                        let b1 = construct(replacements, b);
+                        let a1 = construct_inner(replacements, a);
+                        let b1 = construct_inner(replacements, b);
                         Expression::And(a1, b1)
                     },
                     &QExp::Not(x) => {
-                        let x1 = construct(replacements, x);
+                        let x1 = construct_inner(replacements, x);
                         Expression::Not(x1)
                     },
                     &QExp::Var(n) => {
@@ -49,6 +49,10 @@ pub fn construct<'a>(
     }
 }
 
+pub fn construct<'a>(exp: &'a QExp<'a>) -> Rc<Expression> {
+    construct_inner(&mut HashMap::new(), exp)
+}
+
 fn with_inner_end<'a, F, X>(
     mut replacements: HashMap<*const (), &'a QExp<'a>>,
     expr_ptr: *const (),
@@ -60,11 +64,10 @@ fn with_inner_end<'a, F, X>(
     f(replacements, exp)
 }
 
-fn with_inner<'a, F, X>(
+fn with_inner<'a, X>(
     replacements: HashMap<*const (), &'a QExp<'a>>,
     exp: Rc<Expression>,
-    f: &mut F) -> X
-    where F : for<'b> FnMut(HashMap<*const (), &'b QExp<'b>>, &'b QExp<'b>) -> X
+    mut f: &mut (for<'b> FnMut(HashMap<*const (), &'b QExp<'b>>, &'b QExp<'b>) -> X + 'a)) -> X
 {
     let expr_ptr = &*exp as *const _ as *const ();
     match replacements.get(&expr_ptr).map(|v| v.clone()) {
@@ -75,7 +78,7 @@ fn with_inner<'a, F, X>(
                     with_inner(replacements, a.clone(), &mut |replacements1, a1| {
                         with_inner(replacements1, b.clone(), &mut |replacements2, b1| {
                             problem::and(a1, b1, |e| {
-                                with_inner_end(replacements2, expr_ptr, e, f)
+                                with_inner_end(replacements2, expr_ptr, e, &mut f)
                             })
                         })
                     })
@@ -83,28 +86,27 @@ fn with_inner<'a, F, X>(
                 Expression::Not(ref x) => {
                     with_inner(replacements, x.clone(), &mut |replacements1, x1| {
                         problem::not(x1, |e| {
-                            with_inner_end(replacements1, expr_ptr, e, f)
+                            with_inner_end(replacements1, expr_ptr, e, &mut f)
                         })
                     })
                 },
                 Expression::Var(var) => {
-                    with_inner_end(replacements, expr_ptr, &QExp::Var(var), f)
+                    with_inner_end(replacements, expr_ptr, &QExp::Var(var), &mut f)
                 },
                 Expression::True => {
-                    with_inner_end(replacements, expr_ptr, &problem::TRUE, f)
+                    with_inner_end(replacements, expr_ptr, &problem::TRUE, &mut f)
                 },
                 Expression::False => {
-                    with_inner_end(replacements, expr_ptr, &problem::FALSE, f)
+                    with_inner_end(replacements, expr_ptr, &problem::FALSE, &mut f)
                 }
             }
         }
     }
 }
 
-pub fn with<F, X>(
+pub fn with<X>(
     exp: Rc<Expression>,
-    f: &mut F) -> X
-    where F : for<'b> FnMut(&'b QExp<'b>) -> X
+    f: &mut (for<'b> FnMut(&'b QExp<'b>) -> X)) -> X
 {
     with_inner(HashMap::new(), exp, &mut |_, e| f(e))
 }

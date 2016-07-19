@@ -84,24 +84,28 @@ fn with_statements<'r, X>(
 }
 
 fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Vec<u32>) {
-    let first_quantifier = quantifiers[0].clone();
-    let mut output = vec![];
+    if quantifiers.len() == 0 {
+        (Quantifier::Exists, vec![])
+    } else {
+        let first_quantifier = quantifiers[0].clone();
+        let mut output = vec![];
 
-    let mut current_quantifier = first_quantifier.clone();
-    let mut n = 1;
+        let mut current_quantifier = first_quantifier.clone();
+        let mut n = 1;
 
-    for quantifier in &quantifiers[1..] {
-        if quantifier.clone() == current_quantifier {
-            n += 1;
-        } else {
-            output.push(n);
-            n = 1;
-            current_quantifier = quantifier.clone();
+        for quantifier in &quantifiers[1..] {
+            if quantifier.clone() == current_quantifier {
+                n += 1;
+            } else {
+                output.push(n);
+                n = 1;
+                current_quantifier = quantifier.clone();
+            }
         }
-    }
-    output.push(n);
+        output.push(n);
 
-    return (first_quantifier, output);
+        (first_quantifier, output)
+    }
 }
 
 pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X

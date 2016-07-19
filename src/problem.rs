@@ -61,7 +61,7 @@ impl<'r> Expression<'r> {
         }
     }
 
-    fn variables(&self) -> Vars {
+    pub fn variables(&self) -> Vars {
         self.with_variables(|v| v.clone())
     }
 
