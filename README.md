@@ -1,10 +1,8 @@
-This is a QBF solver written in rust. It was written primarily as a learning
-exercise.
+This is an AIG-based QBF solver written in rust. The current strategy is to do
+expansion up to some bound, then enumeration. It also does some basic
+AIG-based optimizations.
 
-As things currently stand, it is completely naïve and does the exponential bad
-thing without much in the way of optimizations or heuristics. Future plans
-involve optimistically sending off subproblems to picosat and selective
-expansion.
+As QBF solvers go, it's nothing special... yet.
 
 The input format is non-CNF, but prenex-normal. Here's an example:
 
