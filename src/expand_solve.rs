@@ -10,6 +10,9 @@ use rc_expression::Expression as RExp;
 use rc_expression::construct;
 use rc_expression::with;
 
+use n_expression::Expression as NExp;
+use n_expression::nexp_to_rexp;
+
 use substitute::substitute;
 
 use solve::solve as enumeration_solve;
@@ -39,14 +42,19 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
     let n_variables: u32 = problem.quantifier_blocks.iter().sum();
     let mut expr = construct(problem.expr);
 
+    let n_expr = NExp::from_rexp(expr);
+    expr = nexp_to_rexp(n_expr.clone());
+
     let mut current_quantifier = problem.last_quantifier;
     let mut var = n_variables - 1;
     for block in problem.quantifier_blocks.iter().rev() {
         for _ in 0..block.clone() {
             let (expr1, sz) = expand(current_quantifier, var, expr);
+            println!("expanded {} {}", var, sz);
             expr = expr1;
 
-            if sz > 2000 {
+
+            if sz > 1000000 {
                 break;
             }
 

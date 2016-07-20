@@ -126,27 +126,75 @@ pub fn and<'a, F, X>(
     where F: for<'b> FnOnce(&'b Expression<'b>) -> X
 {
     match (a, b) {
-        (&Expression::False, _) => f(&FALSE),
-        (_, &Expression::False) => f(&FALSE),
-        (&Expression::True, _) => f(b),
-        (_, &Expression::True) => f(a),
-        (&Expression::And(_, p, q), _) if same_thing(p, b) || same_thing(q, b) => f(a),
-        (_, &Expression::And(_, p, q)) if same_thing(p, a) || same_thing(q, a) => f(b),
-        _ => {
-            let (a_implied_true, a_implied_false) = implied(&a);
-            let (b_implied_true, b_implied_false) = implied(&b);
+        (&Expression::False, _) => return f(&FALSE),
+        (_, &Expression::False) => return f(&FALSE),
+        (&Expression::True, _) => return f(b),
+        (_, &Expression::True) => return f(a),
+        (&Expression::And(_, p, q), _) if same_thing(p, b) || same_thing(q, b) => return f(a),
+        (_, &Expression::And(_, p, q)) if same_thing(p, a) || same_thing(q, a) => return f(b),
+        (u, &Expression::Not(&Expression::And(_, p, q))) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, u, f)
+                })
+        },
+        (u, &Expression::Not(&Expression::And(_, q, p))) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, u, f)
+                })
+        },
+        (&Expression::Not(&Expression::And(_, p, q)), u) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, u, f)
+                })
+        },
+        (&Expression::Not(&Expression::And(_, q, p)), u) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, u, f)
+                })
+        },
+        (&Expression::Not(u), &Expression::Not(&Expression::And(_, &Expression::Not(p), q))) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, a, f)
+                })
+        },
+        (&Expression::Not(u), &Expression::Not(&Expression::And(_, q, &Expression::Not(p)))) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, a, f)
+                })
+        },
+        (&Expression::Not(&Expression::And(_, &Expression::Not(p), q)), &Expression::Not(u)) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, b, f)
+                })
+        },
+        (&Expression::Not(&Expression::And(_, q, &Expression::Not(p))), &Expression::Not(u)) if same_thing(p, u) => {
+            return
+                not(q, |q_| {
+                    and(q_, b, f)
+                })
+        },
+        _ => {}
+    }
 
-            if a_implied_true.intersection(&b_implied_false).next().is_some() ||
-               a_implied_false.intersection(&b_implied_true).next().is_some() {
-                f(&FALSE)
-            } else {
-                let mut v_a = a.variables();
-                let mut v_b = b.variables();
-                v_a.union(&mut v_b);
-                let e = Expression::And(v_a, a, b);
-                f(&e)
-            }
-        }
+    let (a_implied_true, a_implied_false) = implied(&a);
+    let (b_implied_true, b_implied_false) = implied(&b);
+
+    if a_implied_true.intersection(&b_implied_false).next().is_some() ||
+       a_implied_false.intersection(&b_implied_true).next().is_some() {
+        f(&FALSE)
+    } else {
+        let mut v_a = a.variables();
+        let mut v_b = b.variables();
+        v_a.union(&mut v_b);
+        let e = Expression::And(v_a, a, b);
+        f(&e)
     }
 }
 
