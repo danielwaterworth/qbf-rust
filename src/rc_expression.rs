@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use problem;
+use problem::Quantifier;
 use problem::Expression as QExp;
 
 #[derive(Debug)]
@@ -12,6 +13,14 @@ pub enum Exp {
     Var(u32),
     True,
     False
+}
+
+#[derive(Debug)]
+pub struct QBF {
+    pub first_quantifier: Quantifier,
+    pub last_quantifier: Quantifier,
+    pub quantifier_blocks: Vec<u32>,
+    pub expr: Rc<Exp>
 }
 
 fn construct_inner<'a>(

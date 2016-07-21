@@ -21,14 +21,11 @@ fn main() {
         let mut s = String::new();
         f.read_to_string(&mut s).unwrap();
         let parsed = parser::parse(s.as_ref());
+        let qbf = introduce::construct_problem(parsed);
 
-        let f: &for<'r> Fn(problem::QBF<'r>) -> () = &|qbf| {
-            match solve(&qbf) {
-                Solution::Sat => println!("sat"),
-                Solution::Unsat => println!("unsat")
-            }
-        };
-
-        introduce::with_parsed_problem(parsed, f)
+        match solve(qbf) {
+            Solution::Sat => println!("sat"),
+            Solution::Unsat => println!("unsat")
+        }
     }).unwrap().join().unwrap();
 }

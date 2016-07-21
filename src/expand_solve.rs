@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use problem;
-use problem::QBF;
 use problem::Quantifier;
 use problem::Solution;
 use problem::opposite_quantifier;
@@ -9,6 +8,7 @@ use problem::opposite_quantifier;
 use rc_expression::Exp as RExp;
 use rc_expression::construct;
 use rc_expression::with;
+use rc_expression::QBF;
 
 use substitute::substitute;
 
@@ -33,9 +33,9 @@ fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> Rc<RExp> {
     })
 }
 
-pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
+pub fn solve<'r>(problem: QBF) -> Solution {
     let n_variables: u32 = problem.quantifier_blocks.iter().sum();
-    let mut expr = construct(problem.expr);
+    let mut expr = problem.expr;
 
     let mut current_quantifier = problem.last_quantifier;
     let mut var = n_variables - 1;

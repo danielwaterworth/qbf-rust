@@ -92,9 +92,7 @@ fn quantifier_blocks(quantifiers: &[Quantifier]) -> (Quantifier, Quantifier, Vec
     }
 }
 
-pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
-    where F : for<'r> FnMut(problem::QBF<'r>) -> X
-{
+pub fn construct_problem(parsed: parser::Problem) -> rc_expression::QBF {
     let quantifiers = parsed.quantifiers;
     let statements = parsed.statements;
     let output = parsed.output;
@@ -108,12 +106,10 @@ pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
     let e = lookup_literal(&mut builder, &mut variables, &output);
     let (first_quantifier, last_quantifier, blocks) = quantifier_blocks(&quantifiers1.as_slice());
 
-    rc_expression::with(e, &mut |e1| {
-        f(problem::QBF {
-            first_quantifier: first_quantifier,
-            last_quantifier: last_quantifier,
-            quantifier_blocks: blocks.as_slice(),
-            expr: e1
-        })
-    })
+    rc_expression::QBF {
+        first_quantifier: first_quantifier,
+        last_quantifier: last_quantifier,
+        quantifier_blocks: blocks,
+        expr: e
+    }
 }
