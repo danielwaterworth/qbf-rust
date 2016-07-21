@@ -6,16 +6,20 @@ use problem::opposite_quantifier;
 
 use rc_expression::Exp as RExp;
 use rc_expression::QBF;
+use rc_expression::Builder;
 
 use rc_substitute::substitute;
 
 fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> Rc<RExp> {
-    let false_expr = substitute(exp.clone(), var, false);
-    let true_expr = substitute(exp, var, true);
-    match quantifier {
-        Quantifier::ForAll => RExp::and(false_expr, true_expr),
-        Quantifier::Exists => RExp::or(false_expr, true_expr)
-    }
+    let mut builder = Builder::new();
+    let false_expr = substitute(&mut builder, exp.clone(), var, false);
+    let true_expr = substitute(&mut builder, exp, var, true);
+    let output =
+        match quantifier {
+            Quantifier::ForAll => builder.and(false_expr, true_expr),
+            Quantifier::Exists => builder.or(false_expr, true_expr)
+        };
+    output
 }
 
 pub fn solve<'r>(problem: QBF) -> Solution {
@@ -31,10 +35,6 @@ pub fn solve<'r>(problem: QBF) -> Solution {
             expr = expand(current_quantifier, var, expr);
             let sz = expr.size();
             println!("expanded {} {}", var, sz);
-
-            if sz > 1000000 {
-                panic!("expansion failed");
-            }
         }
         current_quantifier = opposite_quantifier(current_quantifier);
     }

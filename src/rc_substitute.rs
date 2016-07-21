@@ -2,19 +2,22 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use rc_expression::Exp;
+use rc_expression::Builder;
 
-struct Substituter {
+struct Substituter<'r> {
     variable: u32,
     value: bool,
     subs: HashMap<*const Exp, Rc<Exp>>,
+    builder: &'r mut Builder
 }
 
-impl Substituter {
-    fn new(variable: u32, value: bool) -> Substituter {
+impl<'r> Substituter<'r> {
+    fn new(builder: &mut Builder, variable: u32, value: bool) -> Substituter {
         Substituter {
             variable: variable,
             value: value,
-            subs: HashMap::new()
+            subs: HashMap::new(),
+            builder: builder
         }
     }
 
@@ -32,7 +35,7 @@ impl Substituter {
                                ((&**b as *const _) == (&*b1 as *const _)) {
                                 exp.clone()
                             } else {
-                                Exp::and(a1, b1)
+                                self.builder.and(a1, b1)
                             }
                         },
                         &Exp::Not(ref a) => {
@@ -40,7 +43,7 @@ impl Substituter {
                             if (&**a as *const _) == (&*a1 as *const _) {
                                 exp.clone()
                             } else {
-                                Exp::not(a1)
+                                self.builder.not(a1)
                             }
                         },
                         &Exp::Var(n) => {
@@ -64,9 +67,10 @@ impl Substituter {
 }
 
 pub fn substitute(
+        builder: &mut Builder,
         expr: Rc<Exp>,
         variable: u32,
         value: bool) -> Rc<Exp>
 {
-    Substituter::new(variable, value).substitute(expr)
+    Substituter::new(builder, variable, value).substitute(expr)
 }

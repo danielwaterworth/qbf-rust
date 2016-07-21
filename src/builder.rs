@@ -5,17 +5,20 @@ use std::cmp::max;
 use std::collections::HashMap;
 
 use rc_expression::Exp as Exp;
+use rc_expression::Builder as RBuilder;
 
 pub struct Builder {
     ands: HashMap<(*const (), *const ()), Rc<Exp>>,
-    nots: HashMap<*const (), Rc<Exp>>
+    nots: HashMap<*const (), Rc<Exp>>,
+    rbuilder: RBuilder
 }
 
 impl Builder {
     pub fn new() -> Builder {
         Builder{
             ands: HashMap::new(),
-            nots: HashMap::new()
+            nots: HashMap::new(),
+            rbuilder: RBuilder::new()
         }
     }
 
@@ -36,7 +39,7 @@ impl Builder {
         match self.nots.get(&expr_ptr).map(|v| v.clone()) {
             Some(e) => e,
             None => {
-                let e = Exp::not(a);
+                let e = self.rbuilder.not(a);
                 self.nots.insert(expr_ptr, e.clone());
                 e
             }
@@ -53,7 +56,7 @@ impl Builder {
                 e
             },
             None => {
-                let e = Exp::and(a, b);
+                let e = self.rbuilder.and(a, b);
                 self.ands.insert(k, e.clone());
                 e
             }

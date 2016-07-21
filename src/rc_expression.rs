@@ -20,7 +20,35 @@ pub struct QBF {
     pub expr: Rc<Exp>
 }
 
-fn same_thing<X>(a: &X, b: &X) -> bool {
+impl Exp {
+    pub fn size(&self) -> usize {
+        let mut visited = HashSet::new();
+        let mut size = 0;
+
+        let mut to_visit = vec![self];
+        while let Some(node) = to_visit.pop() {
+            let expr_ptr = node as (*const _);
+            if !visited.contains(&expr_ptr) {
+                visited.insert(expr_ptr);
+                size += 1;
+                match node {
+                    &Exp::And(ref a, ref b) => {
+                        to_visit.push(&*a);
+                        to_visit.push(&*b);
+                    },
+                    &Exp::Not(ref a) => {
+                        to_visit.push(&*a);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        size
+    }
+}
+
+fn same_exp(a: &Exp, b: &Exp) -> bool {
     (a as *const _) == (b as *const _)
 }
 
@@ -47,8 +75,15 @@ fn implied(exp: Rc<Exp>) -> (HashSet<*const Exp>, HashSet<*const Exp>) {
     (trues, falses)
 }
 
-impl Exp {
-    pub fn not(a: Rc<Exp>) -> Rc<Exp> {
+pub struct Builder {
+}
+
+impl Builder {
+    pub fn new() -> Builder {
+        Builder {}
+    }
+
+    pub fn not(&self, a: Rc<Exp>) -> Rc<Exp> {
         match &*a {
             &Exp::True => Rc::new(Exp::False),
             &Exp::False => Rc::new(Exp::True),
@@ -57,11 +92,39 @@ impl Exp {
         }
     }
 
-    pub fn or(a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
-        Exp::not(Exp::and(Exp::not(a), Exp::not(b)))
+    pub fn or(&mut self, a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
+        let a1 = self.not(a);
+        let b1 = self.not(b);
+        let x = self.and(a1, b1);
+        self.not(x)
     }
 
-    pub fn and(a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
+    pub fn match_and(&mut self, a: Rc<Exp>, b: Rc<Exp>) -> Option<Rc<Exp>> {
+        let ref a1 = *a.clone();
+        let ref b1 = *b.clone();
+        match (a1, b1) {
+            (&Exp::Not(ref u), _) => {
+                let ref u1 = *u.clone();
+                match u1 {
+                    &Exp::And(ref q, ref p) => {
+                        if same_exp(&*q, &*b) {
+                            let p1 = self.not(p.clone());
+                            Some(self.and(p1, b))
+                        } else if same_exp(&*p, &*b) {
+                            let q1 = self.not(q.clone());
+                            Some(self.and(q1, b))
+                        } else {
+                            None
+                        }
+                    },
+                    _ => None
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn and(&mut self, a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
         let ref a1 = *a.clone();
         let ref b1 = *b.clone();
         match (a1, b1) {
@@ -69,35 +132,23 @@ impl Exp {
             (_, &Exp::False) => return b.clone(),
             (&Exp::True, _) => return b.clone(),
             (_, &Exp::True) => return a.clone(),
-            (&Exp::And(ref p, ref q), _) if same_thing(&**p, b1) || same_thing(&**q, b1) => return a.clone(),
-            (_, &Exp::And(ref p, ref q)) if same_thing(&**p, a1) || same_thing(&**q, a1) => return b.clone(),
-            (_, &Exp::Not(ref v)) => {
-                let ref v1 = *v.clone();
-                match v1 {
-                    &Exp::And(ref q, ref p) => {
-                        if same_thing(&**q, &*a) {
-                            return Exp::and(a.clone(), Exp::not(p.clone()));
-                        } else if same_thing(&**p, &*a) {
-                            return Exp::and(a.clone(), Exp::not(q.clone()));
-                        }
-                    },
-                    _ => {}
-                }
-            },
-            (&Exp::Not(ref u), _) => {
-                let ref u1 = *u.clone();
-                match u1 {
-                    &Exp::And(ref q, ref p) => {
-                        if same_thing(&**q, &*b) {
-                            return Exp::and(b.clone(), Exp::not(p.clone()));
-                        } else if same_thing(&**p, &*b) {
-                            return Exp::and(b.clone(), Exp::not(q.clone()));
-                        }
-                    },
-                    _ => {}
-                }
-            },
+            (&Exp::And(ref p, ref q), _) if same_exp(&**p, b1) || same_exp(&**q, b1) => return a.clone(),
+            (_, &Exp::And(ref p, ref q)) if same_exp(&**p, a1) || same_exp(&**q, a1) => return b.clone(),
             _ => {}
+        }
+
+        match self.match_and(a.clone(), b.clone()) {
+            Some(e) => {
+                return e;
+            }
+            None => {}
+        }
+
+        match self.match_and(b.clone(), a.clone()) {
+            Some(e) => {
+                return e;
+            }
+            None => {}
         }
 
         let (a_implied_true, a_implied_false) = implied(a.clone());
@@ -109,31 +160,5 @@ impl Exp {
         } else {
             Rc::new(Exp::And(a, b))
         }
-    }
-
-    pub fn size(&self) -> usize {
-        let mut visited = HashSet::new();
-        let mut size = 0;
-
-        let mut to_visit = vec![self];
-        while let Some(node) = to_visit.pop() {
-            let expr_ptr = node as (*const _);
-            if !visited.contains(&expr_ptr) {
-                visited.insert(expr_ptr);
-                size += 1;
-                match node {
-                    &Exp::And(ref a, ref b) => {
-                        to_visit.push(&*a);
-                        to_visit.push(&*b);
-                    },
-                    &Exp::Not(ref a) => {
-                        to_visit.push(&*a);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        size
     }
 }
