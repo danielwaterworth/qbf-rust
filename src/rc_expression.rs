@@ -110,3 +110,13 @@ pub fn with<X>(
 {
     with_inner(HashMap::new(), exp, &mut |_, e| f(e))
 }
+
+impl Expression {
+    pub fn and(a: Rc<Expression>, b: Rc<Expression>) -> Expression {
+        Expression::And(a, b)
+    }
+
+    pub fn not(a: Rc<Expression>) -> Expression {
+        Expression::Not(a)
+    }
+}
