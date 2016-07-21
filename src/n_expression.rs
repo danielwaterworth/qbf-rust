@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use std::rc::Rc;
 
-use rc_expression::Expression as RExp;
+use rc_expression::Exp as RExp;
 
 #[derive(Debug)]
 pub enum Expression {

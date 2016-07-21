@@ -4,7 +4,7 @@ use std::cmp::min;
 use std::cmp::max;
 use std::collections::HashMap;
 
-use rc_expression::Expression as Exp;
+use rc_expression::Exp as Exp;
 
 pub struct Builder {
     ands: HashMap<(*const (), *const ()), Rc<Exp>>,

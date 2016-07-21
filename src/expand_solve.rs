@@ -6,7 +6,7 @@ use problem::Quantifier;
 use problem::Solution;
 use problem::opposite_quantifier;
 
-use rc_expression::Expression as RExp;
+use rc_expression::Exp as RExp;
 use rc_expression::construct;
 use rc_expression::with;
 

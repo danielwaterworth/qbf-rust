@@ -11,7 +11,7 @@ use parser::Expression as PExp;
 use problem::Quantifier;
 
 use rc_expression;
-use rc_expression::Expression as Exp;
+use rc_expression::Exp as Exp;
 
 fn lookup_literal(
         builder: &mut Builder,

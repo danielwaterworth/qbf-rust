@@ -6,17 +6,17 @@ use problem;
 use problem::Expression as QExp;
 
 #[derive(Debug)]
-pub enum Expression {
-    And(Rc<Expression>, Rc<Expression>),
-    Not(Rc<Expression>),
+pub enum Exp {
+    And(Rc<Exp>, Rc<Exp>),
+    Not(Rc<Exp>),
     Var(u32),
     True,
     False
 }
 
 fn construct_inner<'a>(
-        replacements: &mut HashMap<*const (), Rc<Expression>>,
-        exp: &'a QExp<'a>) -> Rc<Expression>
+        replacements: &mut HashMap<*const (), Rc<Exp>>,
+        exp: &'a QExp<'a>) -> Rc<Exp>
 {
     let expr_ptr = exp as *const _ as *const ();
     match replacements.get(&expr_ptr).map(|v| v.clone()) {
@@ -27,20 +27,20 @@ fn construct_inner<'a>(
                     &QExp::And(_, a, b) => {
                         let a1 = construct_inner(replacements, a);
                         let b1 = construct_inner(replacements, b);
-                        Expression::and(a1, b1)
+                        Exp::and(a1, b1)
                     },
                     &QExp::Not(x) => {
                         let x1 = construct_inner(replacements, x);
-                        Expression::not(x1)
+                        Exp::not(x1)
                     },
                     &QExp::Var(n) => {
-                        Rc::new(Expression::Var(n))
+                        Rc::new(Exp::Var(n))
                     },
                     &QExp::True => {
-                        Rc::new(Expression::True)
+                        Rc::new(Exp::True)
                     },
                     &QExp::False => {
-                        Rc::new(Expression::False)
+                        Rc::new(Exp::False)
                     }
                 };
             replacements.insert(expr_ptr, outcome.clone());
@@ -49,7 +49,7 @@ fn construct_inner<'a>(
     }
 }
 
-pub fn construct<'a>(exp: &'a QExp<'a>) -> Rc<Expression> {
+pub fn construct<'a>(exp: &'a QExp<'a>) -> Rc<Exp> {
     construct_inner(&mut HashMap::new(), exp)
 }
 
@@ -66,7 +66,7 @@ fn with_inner_end<'a, F, X>(
 
 fn with_inner<'a, X>(
     replacements: HashMap<*const (), &'a QExp<'a>>,
-    exp: Rc<Expression>,
+    exp: Rc<Exp>,
     mut f: &mut (for<'b> FnMut(HashMap<*const (), &'b QExp<'b>>, &'b QExp<'b>) -> X + 'a)) -> X
 {
     let expr_ptr = &*exp as *const _ as *const ();
@@ -74,7 +74,7 @@ fn with_inner<'a, X>(
         Some(exp1) => f(replacements, exp1),
         None => {
             match *exp {
-                Expression::And(ref a, ref b) => {
+                Exp::And(ref a, ref b) => {
                     with_inner(replacements, a.clone(), &mut |replacements1, a1| {
                         with_inner(replacements1, b.clone(), &mut |replacements2, b1| {
                             problem::and(a1, b1, |e| {
@@ -83,20 +83,20 @@ fn with_inner<'a, X>(
                         })
                     })
                 },
-                Expression::Not(ref x) => {
+                Exp::Not(ref x) => {
                     with_inner(replacements, x.clone(), &mut |replacements1, x1| {
                         problem::not(x1, |e| {
                             with_inner_end(replacements1, expr_ptr, e, &mut f)
                         })
                     })
                 },
-                Expression::Var(var) => {
+                Exp::Var(var) => {
                     with_inner_end(replacements, expr_ptr, &QExp::Var(var), &mut f)
                 },
-                Expression::True => {
+                Exp::True => {
                     with_inner_end(replacements, expr_ptr, &problem::TRUE, &mut f)
                 },
-                Expression::False => {
+                Exp::False => {
                     with_inner_end(replacements, expr_ptr, &problem::FALSE, &mut f)
                 }
             }
@@ -105,7 +105,7 @@ fn with_inner<'a, X>(
 }
 
 pub fn with<X>(
-    exp: Rc<Expression>,
+    exp: Rc<Exp>,
     f: &mut (for<'b> FnMut(&'b QExp<'b>) -> X)) -> X
 {
     with_inner(HashMap::new(), exp, &mut |_, e| f(e))
@@ -115,30 +115,87 @@ fn same_thing<X>(a: &X, b: &X) -> bool {
     (a as *const _) == (b as *const _)
 }
 
-impl Expression {
-    pub fn not(a: Rc<Expression>) -> Rc<Expression> {
-        match &*a {
-            &Expression::True => Rc::new(Expression::False),
-            &Expression::False => Rc::new(Expression::True),
-            &Expression::Not(ref e) => e.clone(),
-            _ => Rc::new(Expression::Not(a.clone()))
+fn implied(exp: Rc<Exp>) -> (HashSet<*const Exp>, HashSet<*const Exp>) {
+    let mut trues = HashSet::new();
+    let mut falses = HashSet::new();
+    let mut to_visit = vec![exp];
+
+    while let Some(x) = to_visit.pop() {
+        let expr_ptr = &*x as *const _;
+        trues.insert(expr_ptr);
+        match &*x {
+            &Exp::And(ref p, ref q) => {
+                to_visit.push(p.clone());
+                to_visit.push(q.clone());
+            },
+            &Exp::Not(ref u) => {
+                falses.insert(&**u as *const _);
+            },
+            _ => {}
         }
     }
 
-    pub fn and(a: Rc<Expression>, b: Rc<Expression>) -> Rc<Expression> {
-        let ref a1 = *a;
-        let ref b1 = *b;
+    (trues, falses)
+}
+
+impl Exp {
+    pub fn not(a: Rc<Exp>) -> Rc<Exp> {
+        match &*a {
+            &Exp::True => Rc::new(Exp::False),
+            &Exp::False => Rc::new(Exp::True),
+            &Exp::Not(ref e) => e.clone(),
+            _ => Rc::new(Exp::Not(a.clone()))
+        }
+    }
+
+    pub fn and(a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
+        let ref a1 = *a.clone();
+        let ref b1 = *b.clone();
         match (a1, b1) {
-            (&Expression::False, _) => return a.clone(),
-            (_, &Expression::False) => return b.clone(),
-            (&Expression::True, _) => return b.clone(),
-            (_, &Expression::True) => return a.clone(),
-            (&Expression::And(ref p, ref q), _) if same_thing(&**p, b1) || same_thing(&**q, b1) => return a.clone(),
-            (_, &Expression::And(ref p, ref q)) if same_thing(&**p, a1) || same_thing(&**q, a1) => return b.clone(),
+            (&Exp::False, _) => return a.clone(),
+            (_, &Exp::False) => return b.clone(),
+            (&Exp::True, _) => return b.clone(),
+            (_, &Exp::True) => return a.clone(),
+            (&Exp::And(ref p, ref q), _) if same_thing(&**p, b1) || same_thing(&**q, b1) => return a.clone(),
+            (_, &Exp::And(ref p, ref q)) if same_thing(&**p, a1) || same_thing(&**q, a1) => return b.clone(),
+            (_, &Exp::Not(ref v)) => {
+                let ref v1 = *v.clone();
+                match v1 {
+                    &Exp::And(ref q, ref p) => {
+                        if same_thing(&**q, &*a) {
+                            return Exp::and(a.clone(), Exp::not(p.clone()));
+                        } else if same_thing(&**p, &*a) {
+                            return Exp::and(a.clone(), Exp::not(q.clone()));
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            (&Exp::Not(ref u), _) => {
+                let ref u1 = *u.clone();
+                match u1 {
+                    &Exp::And(ref q, ref p) => {
+                        if same_thing(&**q, &*b) {
+                            return Exp::and(b.clone(), Exp::not(p.clone()));
+                        } else if same_thing(&**p, &*b) {
+                            return Exp::and(b.clone(), Exp::not(q.clone()));
+                        }
+                    },
+                    _ => {}
+                }
+            },
             _ => {}
         }
 
-        Rc::new(Expression::And(a.clone(), b.clone()))
+        let (a_implied_true, a_implied_false) = implied(a.clone());
+        let (b_implied_true, b_implied_false) = implied(b.clone());
+
+        if a_implied_true.intersection(&b_implied_false).next().is_some() ||
+           a_implied_false.intersection(&b_implied_true).next().is_some() {
+            Rc::new(Exp::False)
+        } else {
+            Rc::new(Exp::And(a, b))
+        }
     }
 
     pub fn size(&self) -> usize {
@@ -152,11 +209,11 @@ impl Expression {
                 visited.insert(expr_ptr);
                 size += 1;
                 match node {
-                    &Expression::And(ref a, ref b) => {
+                    &Exp::And(ref a, ref b) => {
                         to_visit.push(&*a);
                         to_visit.push(&*b);
                     },
-                    &Expression::Not(ref a) => {
+                    &Exp::Not(ref a) => {
                         to_visit.push(&*a);
                     }
                     _ => {}
