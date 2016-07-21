@@ -5,8 +5,6 @@ authors = ["Daniel Waterworth <da.waterworth@gmail.com>"]
 
 [dependencies]
 nom = "^1.2.3"
-bit-vec = "^0.4.3"
-picorust = {git = "https://github.com/DanielWaterworth/picorust.git"}
 
 [[bin]]
 name = "qbf"

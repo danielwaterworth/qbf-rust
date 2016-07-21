@@ -2,37 +2,11 @@
 name = "qbf"
 version = "0.1.0"
 dependencies = [
- "bit-vec 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "picorust 0.1.0 (git+https://github.com/DanielWaterworth/picorust.git)",
 ]
-
-[[package]]
-name = "bit-vec"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "gcc"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "libc"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "nom"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "picorust"
-version = "0.1.0"
-source = "git+https://github.com/DanielWaterworth/picorust.git#be1f3ea9b3c7a09989a7ce709049557a077e30be"
-dependencies = [
- "gcc 0.3.31 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 

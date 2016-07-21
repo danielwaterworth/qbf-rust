@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate nom;
-extern crate bit_vec;
-extern crate picorust;
 
 pub mod builder;
 pub mod dot;
@@ -13,12 +11,7 @@ pub mod printout;
 pub mod problem;
 pub mod rc_expression;
 pub mod rc_substitute;
-pub mod sat;
-pub mod substitute;
-pub mod vars;
 
 #[cfg(test)]
 mod tests {
-    mod introduce;
-    mod problem;
 }
