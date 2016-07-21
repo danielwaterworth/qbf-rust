@@ -23,9 +23,11 @@ pub fn solve<'r>(problem: QBF) -> Solution {
     let mut expr = problem.expr;
 
     let mut current_quantifier = problem.last_quantifier;
-    let mut var = n_variables - 1;
+    let mut var = n_variables;
     for block in problem.quantifier_blocks.iter().rev() {
         for _ in 0..block.clone() {
+            var -= 1;
+
             expr = expand(current_quantifier, var, expr);
             let sz = expr.size();
             println!("expanded {} {}", var, sz);
@@ -33,8 +35,6 @@ pub fn solve<'r>(problem: QBF) -> Solution {
             if sz > 1000000 {
                 panic!("expansion failed");
             }
-
-            var -= 1;
         }
         current_quantifier = opposite_quantifier(current_quantifier);
     }
