@@ -12,6 +12,7 @@ pub mod parser;
 pub mod printout;
 pub mod problem;
 pub mod rc_expression;
+pub mod rc_substitute;
 pub mod sat;
 pub mod substitute;
 pub mod vars;

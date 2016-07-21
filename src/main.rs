@@ -1,6 +1,5 @@
 extern crate qbf;
 
-use qbf::problem;
 use qbf::parser;
 use qbf::introduce;
 

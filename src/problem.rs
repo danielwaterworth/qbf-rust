@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use vars::Vars;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

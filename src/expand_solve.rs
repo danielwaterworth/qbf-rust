@@ -1,36 +1,21 @@
 use std::rc::Rc;
 
-use problem;
 use problem::Quantifier;
 use problem::Solution;
 use problem::opposite_quantifier;
 
 use rc_expression::Exp as RExp;
-use rc_expression::construct;
-use rc_expression::with;
 use rc_expression::QBF;
 
-use substitute::substitute;
+use rc_substitute::substitute;
 
 fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> Rc<RExp> {
-    with(exp, &mut |exp1| {
-        substitute(exp1, var, false, |false_expr| {
-            substitute(exp1, var, true, |true_expr| {
-                match quantifier {
-                    Quantifier::ForAll => {
-                        problem::and(false_expr, true_expr, |expr| {
-                            construct(expr)
-                        })
-                    },
-                    Quantifier::Exists => {
-                        problem::or(false_expr, true_expr, |expr| {
-                            construct(expr)
-                        })
-                    }
-                }
-            })
-        })
-    })
+    let false_expr = substitute(exp.clone(), var, false);
+    let true_expr = substitute(exp, var, true);
+    match quantifier {
+        Quantifier::ForAll => RExp::and(false_expr, true_expr),
+        Quantifier::Exists => RExp::or(false_expr, true_expr)
+    }
 }
 
 pub fn solve<'r>(problem: QBF) -> Solution {

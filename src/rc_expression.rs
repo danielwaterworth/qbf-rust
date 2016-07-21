@@ -157,6 +157,10 @@ impl Exp {
         }
     }
 
+    pub fn or(a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
+        Exp::not(Exp::and(Exp::not(a), Exp::not(b)))
+    }
+
     pub fn and(a: Rc<Exp>, b: Rc<Exp>) -> Rc<Exp> {
         let ref a1 = *a.clone();
         let ref b1 = *b.clone();

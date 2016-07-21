@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::collections::HashMap;
 
 use parser;
-use problem;
 use builder::Builder;
 
 use parser::Statement;
