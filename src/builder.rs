@@ -36,7 +36,7 @@ impl Builder {
         match self.nots.get(&expr_ptr).map(|v| v.clone()) {
             Some(e) => e,
             None => {
-                let e = Rc::new(Exp::not(a));
+                let e = Exp::not(a);
                 self.nots.insert(expr_ptr, e.clone());
                 e
             }
@@ -53,7 +53,7 @@ impl Builder {
                 e
             },
             None => {
-                let e = Rc::new(Exp::and(a, b));
+                let e = Exp::and(a, b);
                 self.ands.insert(k, e.clone());
                 e
             }

@@ -27,25 +27,24 @@ fn construct_inner<'a>(
                     &QExp::And(_, a, b) => {
                         let a1 = construct_inner(replacements, a);
                         let b1 = construct_inner(replacements, b);
-                        Expression::And(a1, b1)
+                        Expression::and(a1, b1)
                     },
                     &QExp::Not(x) => {
                         let x1 = construct_inner(replacements, x);
-                        Expression::Not(x1)
+                        Expression::not(x1)
                     },
                     &QExp::Var(n) => {
-                        Expression::Var(n)
+                        Rc::new(Expression::Var(n))
                     },
                     &QExp::True => {
-                        Expression::True
+                        Rc::new(Expression::True)
                     },
                     &QExp::False => {
-                        Expression::False
+                        Rc::new(Expression::False)
                     }
                 };
-            let outcome1 = Rc::new(outcome);
-            replacements.insert(expr_ptr, outcome1.clone());
-            outcome1
+            replacements.insert(expr_ptr, outcome.clone());
+            outcome
         }
     }
 }
@@ -112,13 +111,34 @@ pub fn with<X>(
     with_inner(HashMap::new(), exp, &mut |_, e| f(e))
 }
 
+fn same_thing<X>(a: &X, b: &X) -> bool {
+    (a as *const _) == (b as *const _)
+}
+
 impl Expression {
-    pub fn and(a: Rc<Expression>, b: Rc<Expression>) -> Expression {
-        Expression::And(a, b)
+    pub fn not(a: Rc<Expression>) -> Rc<Expression> {
+        match &*a {
+            &Expression::True => Rc::new(Expression::False),
+            &Expression::False => Rc::new(Expression::True),
+            &Expression::Not(ref e) => e.clone(),
+            _ => Rc::new(Expression::Not(a.clone()))
+        }
     }
 
-    pub fn not(a: Rc<Expression>) -> Expression {
-        Expression::Not(a)
+    pub fn and(a: Rc<Expression>, b: Rc<Expression>) -> Rc<Expression> {
+        let ref a1 = *a;
+        let ref b1 = *b;
+        match (a1, b1) {
+            (&Expression::False, _) => return a.clone(),
+            (_, &Expression::False) => return b.clone(),
+            (&Expression::True, _) => return b.clone(),
+            (_, &Expression::True) => return a.clone(),
+            (&Expression::And(ref p, ref q), _) if same_thing(&**p, b1) || same_thing(&**q, b1) => return a.clone(),
+            (_, &Expression::And(ref p, ref q)) if same_thing(&**p, a1) || same_thing(&**q, a1) => return b.clone(),
+            _ => {}
+        }
+
+        Rc::new(Expression::And(a.clone(), b.clone()))
     }
 
     pub fn size(&self) -> usize {
