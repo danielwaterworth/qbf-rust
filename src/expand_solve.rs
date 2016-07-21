@@ -10,12 +10,7 @@ use rc_expression::Expression as RExp;
 use rc_expression::construct;
 use rc_expression::with;
 
-use n_expression::Expression as NExp;
-use n_expression::nexp_to_rexp;
-
 use substitute::substitute;
-
-use solve::solve as enumeration_solve;
 
 fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> (Rc<RExp>, usize) {
     with(exp, &mut |exp1| {
@@ -42,9 +37,6 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
     let n_variables: u32 = problem.quantifier_blocks.iter().sum();
     let mut expr = construct(problem.expr);
 
-    let n_expr = NExp::from_rexp(expr);
-    expr = nexp_to_rexp(n_expr.clone());
-
     let mut current_quantifier = problem.last_quantifier;
     let mut var = n_variables - 1;
     for block in problem.quantifier_blocks.iter().rev() {
@@ -53,9 +45,8 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
             println!("expanded {} {}", var, sz);
             expr = expr1;
 
-
             if sz > 1000000 {
-                break;
+                panic!("expansion failed");
             }
 
             var -= 1;
@@ -63,14 +54,9 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
         current_quantifier = opposite_quantifier(current_quantifier);
     }
 
-    with(expr, &mut |expr1| {
-        enumeration_solve(
-            &QBF {
-                first_quantifier: problem.first_quantifier.clone(),
-                last_quantifier: problem.last_quantifier.clone(),
-                quantifier_blocks: problem.quantifier_blocks,
-                expr: expr1
-            }
-        )
-    })
+    match *expr {
+        RExp::True => Solution::Sat,
+        RExp::False => Solution::Unsat,
+        _ => panic!("free variable")
+    }
 }
