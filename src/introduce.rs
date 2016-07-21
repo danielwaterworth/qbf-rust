@@ -13,8 +13,12 @@ use problem::Quantifier;
 use rc_expression;
 use rc_expression::Expression as Exp;
 
-fn lookup_literal(builder: &mut Builder, l: &parser::Literal) -> Rc<Exp> {
-    let e = builder.get(&l.var);
+fn lookup_literal(
+        builder: &mut Builder,
+        variables: &HashMap<String, Rc<Exp>>,
+        l: &parser::Literal) -> Rc<Exp>
+{
+    let e = variables.get(&l.var).unwrap().clone();
     if l.polarity {
         e
     } else {
@@ -22,38 +26,42 @@ fn lookup_literal(builder: &mut Builder, l: &parser::Literal) -> Rc<Exp> {
     }
 }
 
-fn build_statements(mut builder: &mut Builder, statements: &[Statement]) {
+fn build_statements(
+        builder: &mut Builder,
+        variables: &mut HashMap<String, Rc<Exp>>,
+        statements: &[Statement])
+{
     for statement in statements {
         let name = &statement.name;
         match &statement.exp {
             &PExp::True => {
                 let e = builder.true_();
-                builder.set(name.clone(), e);
+                variables.insert(name.clone(), e);
             },
             &PExp::False => {
                 let e = builder.false_();
-                builder.set(name.clone(), e);
+                variables.insert(name.clone(), e);
             },
             &PExp::Not(ref a) => {
-                let e = lookup_literal(builder, a);
+                let e = lookup_literal(builder, variables, a);
                 let e_ = builder.not(e);
-                builder.set(name.clone(), e_);
+                variables.insert(name.clone(), e_);
             },
             &PExp::And(ref a, ref b) => {
-                let a1 = lookup_literal(builder, a);
-                let b1 = lookup_literal(builder, b);
+                let a1 = lookup_literal(builder, variables, a);
+                let b1 = lookup_literal(builder, variables, b);
                 let e = builder.and(a1, b1);
-                builder.set(name.clone(), e);
+                variables.insert(name.clone(), e);
             },
             &PExp::Or(ref a, ref b) => {
-                let a1 = lookup_literal(builder, a);
-                let b1 = lookup_literal(builder, b);
+                let a1 = lookup_literal(builder, variables, a);
+                let b1 = lookup_literal(builder, variables, b);
                 let e = builder.or(a1, b1);
-                builder.set(name.clone(), e);
+                variables.insert(name.clone(), e);
             },
             &PExp::Lit(ref l) => {
-                let e = lookup_literal(builder, l);
-                builder.set(name.clone(), e);
+                let e = lookup_literal(builder, variables, l);
+                variables.insert(name.clone(), e);
             }
         }
     }
@@ -93,11 +101,11 @@ pub fn with_parsed_problem<F, X>(parsed: parser::Problem, mut f: F) -> X
 
     let (quantifiers1, names) : (Vec<_>, Vec<_>) = quantifiers.into_iter().unzip();
     let variable_expressions = (0..(quantifiers1.len() as u32)).map(|v| Rc::new(Exp::Var(v)));
-    let variables: HashMap<_, _> = names.into_iter().zip(variable_expressions).collect();
+    let mut variables: HashMap<_, _> = names.into_iter().zip(variable_expressions).collect();
 
-    let mut builder = Builder::new(variables);
-    build_statements(&mut builder, statements.as_slice());
-    let e = lookup_literal(&mut builder, &output);
+    let mut builder = Builder::new();
+    build_statements(&mut builder, &mut variables, statements.as_slice());
+    let e = lookup_literal(&mut builder, &mut variables, &output);
     let (first_quantifier, last_quantifier, blocks) = quantifier_blocks(&quantifiers1.as_slice());
 
     rc_expression::with(e, &mut |e1| {

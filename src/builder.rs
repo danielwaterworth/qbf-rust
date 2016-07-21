@@ -7,26 +7,16 @@ use std::collections::HashMap;
 use rc_expression::Expression as Exp;
 
 pub struct Builder {
-    variables: HashMap<String, Rc<Exp>>,
     ands: HashMap<(*const (), *const ()), Rc<Exp>>,
     nots: HashMap<*const (), Rc<Exp>>
 }
 
 impl Builder {
-    pub fn new(variables: HashMap<String, Rc<Exp>>) -> Builder {
+    pub fn new() -> Builder {
         Builder{
-            variables: variables,
             ands: HashMap::new(),
             nots: HashMap::new()
         }
-    }
-
-    pub fn set(&mut self, name: String, exp: Rc<Exp>) {
-        self.variables.insert(name, exp);
-    }
-
-    pub fn get(&self, name: &String) -> Rc<Exp> {
-        self.variables.get(name).unwrap().clone()
     }
 
     pub fn var(&self, v: u32) -> Rc<Exp> {
