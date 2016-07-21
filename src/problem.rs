@@ -64,32 +64,6 @@ impl<'r> Expression<'r> {
     pub fn variables(&self) -> Vars {
         self.with_variables(|v| v.clone())
     }
-
-    pub fn size<'a>(&self) -> usize {
-        let mut visited = HashSet::new();
-        let mut size = 0;
-
-        let mut to_visit = vec![self];
-        while let Some(node) = to_visit.pop() {
-            let expr_ptr = node as (*const _);
-            if !visited.contains(&expr_ptr) {
-                visited.insert(expr_ptr);
-                size += 1;
-                match node {
-                    &Expression::And(_, ref a, ref b) => {
-                        to_visit.push(a);
-                        to_visit.push(b);
-                    },
-                    &Expression::Not(ref a) => {
-                        to_visit.push(a);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        size
-    }
 }
 
 fn same_thing<X>(a: &X, b: &X) -> bool {

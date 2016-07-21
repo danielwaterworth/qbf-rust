@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -118,5 +119,31 @@ impl Expression {
 
     pub fn not(a: Rc<Expression>) -> Expression {
         Expression::Not(a)
+    }
+
+    pub fn size(&self) -> usize {
+        let mut visited = HashSet::new();
+        let mut size = 0;
+
+        let mut to_visit = vec![self];
+        while let Some(node) = to_visit.pop() {
+            let expr_ptr = node as (*const _);
+            if !visited.contains(&expr_ptr) {
+                visited.insert(expr_ptr);
+                size += 1;
+                match node {
+                    &Expression::And(ref a, ref b) => {
+                        to_visit.push(&*a);
+                        to_visit.push(&*b);
+                    },
+                    &Expression::Not(ref a) => {
+                        to_visit.push(&*a);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        size
     }
 }

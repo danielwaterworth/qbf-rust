@@ -12,19 +12,19 @@ use rc_expression::with;
 
 use substitute::substitute;
 
-fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> (Rc<RExp>, usize) {
+fn expand(quantifier: Quantifier, var: u32, exp: Rc<RExp>) -> Rc<RExp> {
     with(exp, &mut |exp1| {
         substitute(exp1, var, false, |false_expr| {
             substitute(exp1, var, true, |true_expr| {
                 match quantifier {
                     Quantifier::ForAll => {
                         problem::and(false_expr, true_expr, |expr| {
-                            (construct(expr), expr.size())
+                            construct(expr)
                         })
                     },
                     Quantifier::Exists => {
                         problem::or(false_expr, true_expr, |expr| {
-                            (construct(expr), expr.size())
+                            construct(expr)
                         })
                     }
                 }
@@ -41,9 +41,9 @@ pub fn solve<'r>(problem: &'r QBF<'r>) -> Solution {
     let mut var = n_variables - 1;
     for block in problem.quantifier_blocks.iter().rev() {
         for _ in 0..block.clone() {
-            let (expr1, sz) = expand(current_quantifier, var, expr);
+            expr = expand(current_quantifier, var, expr);
+            let sz = expr.size();
             println!("expanded {} {}", var, sz);
-            expr = expr1;
 
             if sz > 1000000 {
                 panic!("expansion failed");
