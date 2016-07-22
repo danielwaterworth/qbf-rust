@@ -101,9 +101,8 @@ impl Builder {
 
     pub fn match_and(&mut self, a: Rc<Exp>, b: Rc<Exp>) -> Option<Rc<Exp>> {
         let ref a1 = *a.clone();
-        let ref b1 = *b.clone();
-        match (a1, b1) {
-            (&Exp::Not(ref u), _) => {
+        match a1 {
+            &Exp::Not(ref u) => {
                 let ref u1 = *u.clone();
                 match u1 {
                     &Exp::And(ref q, ref p) => {
@@ -114,6 +113,26 @@ impl Builder {
                             let q1 = self.not(q.clone());
                             Some(self.and(q1, b))
                         } else {
+                            let ref q1 = *q.clone();
+                            match q1 {
+                                &Exp::Not(ref q_) => {
+                                    if same_exp(&*q_, &*b) {
+                                        return Some(b.clone());
+                                    }
+                                }
+                                _ => {}
+                            }
+
+                            let ref p1 = *p.clone();
+                            match p1 {
+                                &Exp::Not(ref p_) => {
+                                    if same_exp(&*p_, &*b) {
+                                        return Some(b.clone());
+                                    }
+                                }
+                                _ => {}
+                            }
+
                             None
                         }
                     },
