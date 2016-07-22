@@ -10,6 +10,10 @@ use rc_expression::Builder as RBuilder;
 pub struct Builder {
     ands: HashMap<(*const (), *const ()), Rc<Exp>>,
     nots: HashMap<*const (), Rc<Exp>>,
+
+    // this forces everything that is referenced to stick around
+    uses: HashMap<*const (), Rc<Exp>>,
+
     rbuilder: RBuilder
 }
 
@@ -18,6 +22,7 @@ impl Builder {
         Builder{
             ands: HashMap::new(),
             nots: HashMap::new(),
+            uses: HashMap::new(),
             rbuilder: RBuilder::new()
         }
     }
@@ -36,6 +41,7 @@ impl Builder {
 
     pub fn not(&mut self, a: Rc<Exp>) -> Rc<Exp> {
         let expr_ptr = &*a as (*const _) as (*const ());
+        self.uses.insert(expr_ptr.clone(), a.clone());
         match self.nots.get(&expr_ptr).map(|v| v.clone()) {
             Some(e) => e,
             None => {
@@ -50,6 +56,8 @@ impl Builder {
         let a_ptr = &*a as (*const _) as (*const ());
         let b_ptr = &*b as (*const _) as (*const ());
         let k = (min(a_ptr, b_ptr), max(a_ptr, b_ptr));
+        self.uses.insert(a_ptr.clone(), a.clone());
+        self.uses.insert(b_ptr.clone(), b.clone());
 
         match self.ands.get(&k).map(|v| v.clone()) {
             Some(e) => {
