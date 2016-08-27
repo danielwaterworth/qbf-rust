@@ -1,8 +1,7 @@
-This is an AIG-based QBF solver written in rust. The current strategy is to do
-expansion up to some bound, then enumeration. It also does some basic
-AIG-based optimizations.
-
-As QBF solvers go, it's nothing special... yet.
+This is an AIG-based QBF solver written in rust. It works by alternating
+between expansion and simplification. This works well in practice, it is
+able to verify the correctness of a sorting network that sorts 1024
+elements.
 
 The input format is non-CNF, but prenex-normal. Here's an example:
 
